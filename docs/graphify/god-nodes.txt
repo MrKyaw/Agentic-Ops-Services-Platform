@@ -1,0 +1,11 @@
+God nodes (most connected):
+  1. Services AI Platform - 261 edges
+  2. Agent Orchestration Framework - 19 edges
+  3. RAG Platform - 18 edges
+  4. MCP Servers - 16 edges
+  5. LLM Fine-Tuning Interface - 14 edges
+  6. Prompt and Intent Classification - 13 edges
+  7. Security Requirements - 11 edges
+  8. Multi-Tenancy and Tenant Management - 11 edges
+  9. Angular Frontend - 11 edges
+  10. Vector and Graph Data Layer - 10 edges

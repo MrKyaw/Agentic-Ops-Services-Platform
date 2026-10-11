@@ -1,0 +1,67 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: platform
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d platform"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+      neo4j:
+        image: neo4j:5-community
+        env:
+          NEO4J_AUTH: none
+        ports:
+          - 7687:7687
+        options: >-
+          --health-cmd "cypher-shell --format plain 'RETURN 1' || exit 1"
+          --health-interval 15s --health-timeout 10s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r backend/requirements.txt
+      - run: pip install pytest ruff
+      - run: ruff check backend/
+      - run: ruff format --check backend/
+      - run: python -m pytest backend/tests/ -q
+        env:
+          AUTH_MODE: dev
+          DEV_TOKEN: ci-token
+          DEV_TENANT: tenant-ci-01
+          TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:5432/platform
+          TEST_NEO4J_URI: bolt://127.0.0.1:7687
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform -chdir=infra/terraform init -backend=false
+      - run: terraform -chdir=infra/terraform validate
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pytest evals/ -q

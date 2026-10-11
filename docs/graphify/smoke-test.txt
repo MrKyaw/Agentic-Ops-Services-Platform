@@ -1,0 +1,4 @@
+[graphify] Extraction warning (2 issues): 2x missing required field 'source_file' (e.g. Edge 0 missing required field 'source_file')
+SMOKE PASS: 3 nodes, 2 edges, 1 communities
+god nodes: []
+graphify 0.9.72

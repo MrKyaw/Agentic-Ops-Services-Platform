@@ -1,0 +1,22 @@
+.env
+.env.local
+*.log.jsonl
+audit.log.jsonl
+last-report.json
+__pycache__/
+*.py[cod]
+.coverage
+.venv/
+node_modules/
+dist/
+.angular/
+graphify-out/
+raw/
+!.gitkeep
+.DS_Store
+.terraform/
+*.tfstate*
+# Full PRD contains non-public planning content: local-only, never committed.
+Agentic-Ops-Services-Platform_PRD.md
+.pytest_cache/
+.ruff_cache/

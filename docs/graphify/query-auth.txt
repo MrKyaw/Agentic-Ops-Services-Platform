@@ -1,0 +1,30 @@
+Graph: graphify-out/graph.json (267 nodes) | Traversal: BFS depth=2 | Start: ['Security Requirements', 'Observability Requirements', 'AP-2: APIs MUST support OAuth2/OIDC-based authentication, service-to-service authentication (mTLS or signed tokens), and API k'] | 34 nodes found
+
+[!] TRUNCATED: showing 25 of 34 nodes (~1500-token budget). The answer may be among the 9 cut nodes — raise the token budget (CLI: --budget) or narrow the query (e.g. context_filter=['call'], or get_node for a specific symbol).
+
+NODE Security Requirements [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE Observability Requirements [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Community 14]
+NODE AP-2: APIs MUST support OAuth2/OIDC-based authentication, service-to-service authentication (mTLS or signed tokens), and API k [src=Agentic-Ops-Services-Platform_PRD.md loc= community=App and APIs]
+NODE Services AI Platform [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Retrieval and RAG]
+NODE Public and Internal APIs [src=Agentic-Ops-Services-Platform_PRD.md loc= community=App and APIs]
+NODE auth [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-1: Identity: integration with enterprise SSO (OIDC/SAML), MFA enforcement, short-lived tokens, service identities via IAM r [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-2: Authorization: RBAC with ABAC refinements (tenant, data classification, workflow, tool risk tier), enforced centrally an [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-8: Audit logging: immutable, tamper-evident logs of administrative actions, data access, model/prompt changes, approvals, a [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE OB-1: Distributed tracing across API, orchestrator, MCP servers, retrieval, and model calls using OpenTelemetry with tenant, r [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Community 14]
+NODE OB-2: Metrics: golden signals (latency, traffic, errors, saturation) per service; domain metrics (runs started/completed/faile [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Community 14]
+NODE OB-3: Structured, correlated logs with PII redaction, sampling policies, and retention tiers. | [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Community 14]
+NODE OB-4: SLOs with error budgets for each core service; burn-rate alerts; dashboards per tenant and per workflow. | [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Community 14]
+NODE OB-5: Alerting integrated with on-call tooling; runbooks linked from alerts; severity definitions and escalation paths. | [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Community 14]
+NODE OB-6: Synthetic monitoring (canary agents/queries) running continuously per environment and region. | [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Community 14]
+NODE OB-7: LLM-specific observability: prompt/response capture (with redaction and access control), model latency/throttle/error ra [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Community 14]
+NODE SC-10: Sandboxing: any code execution tools MUST run in isolated, resource-limited, network-restricted sandboxes with no access [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-3: Encryption in transit (TLS 1.2+, mTLS internal) and at rest (KMS-managed keys, per-tenant keys for sensitive tenants), i [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-4: Secrets management through a managed secrets store with rotation; no secrets in code, prompts, logs, or images. | P0 | [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-5: Network security: private subnets, VPC endpoints/PrivateLink for AWS services, egress allow-listing (including controlle [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-6: Secure SDLC: threat modeling per major component (STRIDE plus LLM-specific threats from OWASP LLM Top 10 and MITRE ATLAS [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-7: Penetration testing before GA and annually, plus bug bounty/internal red-team exercises focused on agent and tool abuse. [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-9: Data loss prevention: output scanning for sensitive data patterns, configurable redaction, and egress controls. | P0 | [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE audit [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE MT-2: A tenant identifier MUST be propagated and enforced on every request, message, database row, vector/graph partition, cac [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+... (truncated — 9 more nodes cut by ~1500-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)

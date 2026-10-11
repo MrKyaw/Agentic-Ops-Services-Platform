@@ -1,0 +1,15 @@
+===== backend pytest =====
+..............                                                           [100%]
+14 passed in 0.35s
+===== evals =====
+...                                                                      [100%]
+3 passed in 0.16s
+===== ruff =====
+All checks passed!
+===== terraform =====
+[0m
+===== preflight (occupied-port run) =====
+API_PORT=8001 [shifted (default busy)]
+FRONTEND_PORT=4200 [default]
+DB_PORT=5432 [default]
+API -> http://localhost:8001/docs

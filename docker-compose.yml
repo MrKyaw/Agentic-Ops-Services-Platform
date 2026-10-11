@@ -1,0 +1,64 @@
+services:
+  db:
+    container_name: Agentic-Ops-Services-db
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: platform
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  api:
+    container_name: Agentic-Ops-Services-phase1
+    build: ./backend
+    env_file:
+      - .env.local
+    environment:
+      ENV: ${ENV:-local}
+      AUTH_MODE: ${AUTH_MODE:-dev}
+      DEV_TOKEN: ${DEV_TOKEN:-}
+      DEV_TENANT: ${DEV_TENANT:-tenant-local-01}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/platform
+      NEO4J_URI: bolt://graph:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    command: sh -c "python -c \"from app.migrate import migrate; import os; print(migrate(os.environ['DATABASE_URL']))\" && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  web:
+    container_name: Agentic-Ops-Services-web
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+  graph:
+    container_name: Agentic-Ops-Services-graph
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?set NEO4J_PASSWORD in .env}
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
+    volumes:
+      - neodata:/data
+
+volumes:
+  pgdata:
+  neodata:

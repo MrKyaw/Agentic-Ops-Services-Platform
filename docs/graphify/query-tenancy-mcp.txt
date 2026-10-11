@@ -1,0 +1,29 @@
+Graph: graphify-out/graph.json (267 nodes) | Traversal: BFS depth=2 | Start: ['tenant', 'MC-2: Agents MUST interact with enterprise data and systems **exclusively** through MCP servers and defined API boundaries. Di', 'API gateway', 'Compliance and Governance', 'MCP Servers', 'Security Requirements'] | 46 nodes found
+
+[!] TRUNCATED: showing 24 of 46 nodes (~1500-token budget). The answer may be among the 22 cut nodes — raise the token budget (CLI: --budget) or narrow the query (e.g. context_filter=['call'], or get_node for a specific symbol).
+
+NODE tenant [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE MC-2: Agents MUST interact with enterprise data and systems **exclusively** through MCP servers and defined API boundaries. Di [src=Agentic-Ops-Services-Platform_PRD.md loc= community=MCP API Boundaries]
+NODE API gateway [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Retrieval and RAG]
+NODE Compliance and Governance [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE MCP Servers [src=Agentic-Ops-Services-Platform_PRD.md loc= community=MCP API Boundaries]
+NODE Security Requirements [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE Services AI Platform [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Retrieval and RAG]
+NODE MT-2: A tenant identifier MUST be propagated and enforced on every request, message, database row, vector/graph partition, cac [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE MT-3: Cross-tenant data access MUST be technically prevented (row-level security in Postgres, per-tenant graph databases or la [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE CP-3: Evidence generation: automated artifacts (evaluation reports, lineage, access reviews, change records) exportable for au [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE MC-8: MCP servers MUST emit structured audit logs of every invocation (caller, tenant, tool, parameters hash/redacted paramete [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE MT-1: The platform MUST support onboarding multiple tenants, each with isolated configuration, agents, prompts, knowledge base [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE MT-4: Tenants MUST have configurable quotas (requests per minute, tokens per day, concurrent runs, storage, fine-tuning jobs). [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE MT-5: The platform MUST provide per-tenant cost attribution (tokens, compute, storage, retrieval operations) with showback/cha [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE MT-8: The platform MUST implement noisy-neighbor protections (fair-share scheduling, per-tenant rate limiting, bulkheads). | P [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-1: Identity: integration with enterprise SSO (OIDC/SAML), MFA enforcement, short-lived tokens, service identities via IAM r [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-2: Authorization: RBAC with ABAC refinements (tenant, data classification, workflow, tool risk tier), enforced centrally an [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Tenancy and Isolation]
+NODE SC-8: Audit logging: immutable, tamper-evident logs of administrative actions, data access, model/prompt changes, approvals, a [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE CP-1: Model and agent inventory with owner, purpose, risk tier, data used, evaluation evidence, and approval history (supports [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE CP-2: Risk-tiering framework for use cases (low, medium, high) driving required controls: human approval, evaluation depth, mo [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE CP-4: Alignment with applicable internal policies and external frameworks (e.g., NIST AI RMF, ISO/IEC 42001, SOC 2, applicable [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE CP-5: Periodic access recertification and segregation of duties (e.g., prompt author cannot be sole approver for high-risk wor [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE CP-6: Explainability support: traces, citations, and decision rationales retained for review of material outputs. | [src=Agentic-Ops-Services-Platform_PRD.md loc= community=Agent Orchestration]
+NODE MC-1: The platform MUST provide a framework and templates for building **MCP servers** that expose enterprise capabilities as  [src=Agentic-Ops-Services-Platform_PRD.md loc= community=MCP API Boundaries]
+... (truncated — 22 more nodes cut by ~1500-token budget. Narrow with context_filter=['call'] or use get_node for a specific symbol)
