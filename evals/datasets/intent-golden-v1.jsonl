@@ -1,0 +1,5 @@
+{"expected": "invoice.exception.triage", "id": "intent-001", "min_confidence": 0.82, "text": "Why was invoice 88123 flagged for exception?"}
+{"expected": "policy.qa.ask", "id": "intent-002", "min_confidence": 0.8, "text": "What are the themes across escalation policies?"}
+{"expected": "case.create", "id": "intent-003", "min_confidence": 0.85, "text": "Open a case for the mismatched amount on invoice 1024"}
+{"expected": "clarify", "id": "intent-004", "min_confidence": 0.5, "text": "handle it"}
+{"expected": "no_match", "id": "intent-005", "min_confidence": 0.5, "text": "sing a song about databases"}
