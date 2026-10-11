@@ -1,0 +1,17 @@
+/* You can add global styles to this file, and also import other style files */
+
+:root { color-scheme: light; }
+body { font-family: system-ui, sans-serif; margin: 0; }
+header nav { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 1rem; background: #1a2332; color: #fff; }
+header nav a { color: #cfe0ff; }
+header nav .tenant { margin-left: auto; opacity: 0.8; }
+main, section { max-width: 72rem; margin: 1.5rem auto; padding: 0 1rem; }
+.card { max-width: 28rem; margin: 4rem auto; padding: 2rem; border: 1px solid #ccc; border-radius: 8px; }
+label { display: block; margin-top: 0.75rem; font-weight: 600; }
+input, select, button { font-size: 1rem; padding: 0.5rem; margin-top: 0.25rem; }
+form.row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end; }
+.error { color: #a40000; }
+.hint { color: #555; }
+pre { background: #f4f4f4; padding: 0.75rem; overflow-x: auto; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+:focus-visible { outline: 3px solid #2f6fed; outline-offset: 2px; }
