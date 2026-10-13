@@ -1,5 +1,18 @@
 # Vercel deployment (frontend only — Gate 2 scope, NOT DONE)
 
+## Project settings (required — this is what the failed build was missing)
+
+Vercel must build `frontend/` only. In the Vercel dashboard → project Settings → General:
+
+- **Root Directory:** `frontend`
+- Build command: `npm ci && npx ng build --configuration=production`
+- Output directory: `dist/console/browser`
+- Install command: default (`npm ci`)
+
+Without this, Vercel builds from the repo root, finds `backend/requirements.txt`,
+and fails installing `torch` (no Python 3.14 wheel). The `frontend/vercel.json`
+additionally pins the build so CLI deploys work from any directory.
+
 ## Architecture split
 
 Vercel hosts the static Angular console only. It cannot run the API (FastAPI container),
