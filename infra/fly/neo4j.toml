@@ -10,9 +10,5 @@ primary_region = "ord"
   source = "neodata"
   destination = "/data"
 
-[[services]]
-  internal_port = 7687
-  protocol = "tcp"
-  auto_stop_machines = "stop"
-  auto_start_machines = true
-  min_machines_running = 0
+# No [[services]] block: private-only over .internal:7687 (trial orgs cannot
+# allocate public IPs; the API reaches Neo4j on the private network).
