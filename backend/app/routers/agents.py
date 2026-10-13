@@ -180,3 +180,25 @@ def canary_compare(
         "agree": react.answer == rewoo.answer,
         "latency_ms": latency_ms,
     }
+
+
+@router.get("/dashboard/summary", response_model=dict)
+def dashboard_summary(
+    principal: Principal = Depends(require_principal), store: Store = Depends(get_store)
+) -> dict:
+    """BFF rollup (BE-3): one call for runs + approvals + usage overview."""
+    from datetime import datetime, timezone
+
+    runs = store.run_list(principal.tenant_id, limit=5)
+    approvals = store.approval_list(principal.tenant_id)
+    usage = store.usage_get(
+        principal.tenant_id, datetime.now(timezone.utc).date().isoformat()
+    )
+    return {
+        "recent_runs": runs,
+        "pending_approvals": len(approvals),
+        "usage_today": {
+            "runs": sum(r["runs"] for r in usage),
+            "cost_usd": round(sum(r["cost_usd"] for r in usage), 6),
+        },
+    }

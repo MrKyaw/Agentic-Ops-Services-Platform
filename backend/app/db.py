@@ -150,12 +150,19 @@ class Store:
 
     # documents + chunks
     def doc_save(
-        self, tenant: str, did: str, kb: str, title: str, acl: list, source: str = ""
+        self,
+        tenant: str,
+        did: str,
+        kb: str,
+        title: str,
+        acl: list,
+        source: str = "",
+        classification: str = "internal",
     ) -> None:
         self._write(
-            "INSERT INTO documents (tenant_id, id, kb_id, title, acl_labels, source_ref) VALUES (%s, %s, %s, %s, %s, %s) "
-            "ON CONFLICT (tenant_id, id) DO UPDATE SET title = EXCLUDED.title, acl_labels = EXCLUDED.acl_labels",
-            (tenant, did, kb, title, _j(acl), source),
+            "INSERT INTO documents (tenant_id, id, kb_id, title, acl_labels, source_ref, classification) VALUES (%s, %s, %s, %s, %s, %s, %s) "
+            "ON CONFLICT (tenant_id, id) DO UPDATE SET title = EXCLUDED.title, acl_labels = EXCLUDED.acl_labels, classification = EXCLUDED.classification",
+            (tenant, did, kb, title, _j(acl), source, classification),
         )
 
     def chunk_save(
@@ -175,14 +182,24 @@ class Store:
             (tenant, cid, kb, did, seq, content, len(content.split()), _j(prov)),
         )
 
+    CLASS_RANK = {"public": 0, "internal": 1, "confidential": 2, "restricted": 3}
+
     def chunk_search_fts(
-        self, tenant: str, kb: str, query: str, limit: int
+        self,
+        tenant: str,
+        kb: str,
+        query: str,
+        limit: int,
+        max_class: str = "restricted",
     ) -> list[dict]:
+        rank = self.CLASS_RANK.get(max_class, 3)
         hits = self._all(
-            "SELECT id, document_id, seq, content, ts_rank(content_tsv, plainto_tsquery('english', %s)) AS rank "
-            "FROM chunks WHERE tenant_id = %s AND kb_id = %s "
-            "AND content_tsv @@ plainto_tsquery('english', %s) ORDER BY rank DESC LIMIT %s",
-            (query, tenant, kb, query, limit),
+            "SELECT c.id, c.document_id, c.seq, c.content, ts_rank(c.content_tsv, plainto_tsquery('english', %s)) AS rank "
+            "FROM chunks c JOIN documents d ON d.tenant_id = c.tenant_id AND d.id = c.document_id "
+            "WHERE c.tenant_id = %s AND c.kb_id = %s "
+            "AND CASE d.classification WHEN 'public' THEN 0 WHEN 'internal' THEN 1 WHEN 'confidential' THEN 2 ELSE 3 END <= %s "
+            "AND c.content_tsv @@ plainto_tsquery('english', %s) ORDER BY rank DESC LIMIT %s",
+            (query, tenant, kb, rank, query, limit),
         )
         if hits:
             return hits
@@ -200,11 +217,13 @@ class Store:
         with connect(self.url) as conn:
             rows = conn.execute(
                 sql.SQL(
-                    "SELECT id, document_id, seq, content, ts_rank(content_tsv, ({q})) AS rank "
-                    "FROM chunks WHERE tenant_id = %s AND kb_id = %s "
-                    "AND content_tsv @@ ({q}) ORDER BY rank DESC LIMIT %s"
+                    "SELECT c.id, c.document_id, c.seq, c.content, ts_rank(c.content_tsv, ({q})) AS rank "
+                    "FROM chunks c JOIN documents d ON d.tenant_id = c.tenant_id AND d.id = c.document_id "
+                    "WHERE c.tenant_id = %s AND c.kb_id = %s "
+                    "AND CASE d.classification WHEN 'public' THEN 0 WHEN 'internal' THEN 1 WHEN 'confidential' THEN 2 ELSE 3 END <= %s "
+                    "AND c.content_tsv @@ ({q}) ORDER BY rank DESC LIMIT %s"
                 ).format(q=ors),
-                (tenant, kb, limit),
+                (tenant, kb, rank, limit),
             ).fetchall()
             return list(rows)
 
@@ -401,17 +420,25 @@ class Store:
             conn.commit()
 
     def chunk_search_dense(
-        self, tenant: str, kb: str, vector: list[float], limit: int
+        self,
+        tenant: str,
+        kb: str,
+        vector: list[float],
+        limit: int,
+        max_class: str = "restricted",
     ) -> list[dict]:
         from pgvector.psycopg import register_vector
 
+        rank = self.CLASS_RANK.get(max_class, 3)
         with connect(self.url) as conn:
             register_vector(conn)
             rows = conn.execute(
-                "SELECT id, document_id, seq, content, (embedding <=> %s::vector) AS distance "
-                "FROM chunks WHERE tenant_id = %s AND kb_id = %s AND embedding IS NOT NULL "
-                "ORDER BY embedding <=> %s::vector LIMIT %s",
-                (vector, tenant, kb, vector, limit),
+                "SELECT c.id, c.document_id, c.seq, c.content, (c.embedding <=> %s::vector) AS distance "
+                "FROM chunks c JOIN documents d ON d.tenant_id = c.tenant_id AND d.id = c.document_id "
+                "WHERE c.tenant_id = %s AND c.kb_id = %s AND c.embedding IS NOT NULL "
+                "AND CASE d.classification WHEN 'public' THEN 0 WHEN 'internal' THEN 1 WHEN 'confidential' THEN 2 ELSE 3 END <= %s "
+                "ORDER BY c.embedding <=> %s::vector LIMIT %s",
+                (vector, tenant, kb, rank, vector, limit),
             ).fetchall()
             return list(rows)
 

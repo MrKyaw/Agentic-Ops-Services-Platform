@@ -38,6 +38,7 @@ class IngestIn(BaseModel):
     title: str = ""
     content: str = Field(min_length=1)
     acl: list[str] = []
+    classification: str = "internal"  # DG-4: classification recorded at onboarding
 
 
 class QueryIn(BaseModel):
@@ -49,6 +50,7 @@ class QueryIn(BaseModel):
     config: str = (
         ""  # versioned retrieval config id (RG-13); overrides strategy/top_k when set
     )
+    max_classification: str = "restricted"  # PV-1: retrieve at or below this class only
 
 
 @router.post("/ingest", response_model=dict, status_code=201)
@@ -62,6 +64,12 @@ def ingest(
     from ..rag import chunk_text
 
     findings = scan(body.content)
+    allowed_classifications = {"internal", "public", "confidential", "restricted"}
+    classification = (
+        body.classification
+        if body.classification in allowed_classifications
+        else "internal"
+    )
     store.doc_save(
         principal.tenant_id,
         body.doc_id,
@@ -69,6 +77,7 @@ def ingest(
         body.title,
         body.acl,
         source="api-ingest-v1",
+        classification=classification,
     )
     chunks = chunk_text(body.content)
     for seq, text in enumerate(chunks):
@@ -259,7 +268,11 @@ def query(
             "passages": [],
         }
     fts_hits = store.chunk_search_fts(
-        principal.tenant_id, body.kb_id, retrieval_query(body.query), top_k * 2
+        principal.tenant_id,
+        body.kb_id,
+        retrieval_query(body.query),
+        top_k * 2,
+        body.max_classification,
     )
     docs = [{"id": h["id"], "content": h["content"]} for h in fts_hits]
     tfidf = tfidf_scores(body.query, docs)
@@ -274,7 +287,11 @@ def query(
         from ..embeddings import embed
 
         dense_hits = store.chunk_search_dense(
-            principal.tenant_id, body.kb_id, embed([body.query])[0], top_k * 2
+            principal.tenant_id,
+            body.kb_id,
+            embed([body.query])[0],
+            top_k * 2,
+            body.max_classification,
         )
         if dense_hits:
             rank_lists.append([h["id"] for h in dense_hits])
@@ -347,3 +364,67 @@ def save_retrieval_config(
         {},
     )
     return {"id": body.id, "version": version}
+
+
+@router.get("/catalog", response_model=list[dict])
+def catalog(
+    principal: Principal = Depends(require_principal), store: Store = Depends(get_store)
+) -> dict:
+    """Data catalog entries (DG-1): sources with classification, chunk counts, provenance."""
+    docs = store._all(
+        "SELECT d.id, d.kb_id, d.title, d.classification, d.source_ref, d.created_at, COUNT(c.id) AS chunks "
+        "FROM documents d LEFT JOIN chunks c ON c.tenant_id = d.tenant_id AND c.document_id = d.id "
+        "WHERE d.tenant_id = %s GROUP BY d.id, d.kb_id, d.title, d.classification, d.source_ref, d.created_at ORDER BY d.id",
+        (principal.tenant_id,),
+    )
+    return {
+        "sources": docs,
+        "retention_note": "see tenant retention policy; purge via /v1/admin/purge",
+    }
+
+
+@router.get("/stats", response_model=dict)
+def kb_stats(
+    principal: Principal = Depends(require_principal), store: Store = Depends(get_store)
+) -> dict:
+    """Quality monitoring basics (DG-3): chunk counts, staleness, per-kb breakdown."""
+    rows = store._all(
+        "SELECT kb_id, COUNT(*) AS chunks, MAX(created_at) AS freshest FROM chunks WHERE tenant_id = %s GROUP BY kb_id",
+        (principal.tenant_id,),
+    )
+    return {"kbs": rows}
+
+
+class FlagIn(BaseModel):
+    doc_id: str
+    reason: str = Field(min_length=3)
+
+
+@router.post("/flag", response_model=dict, status_code=201)
+def flag_content(
+    body: FlagIn,
+    principal: Principal = Depends(require_principal),
+    store: Store = Depends(get_store),
+    audit: AuditLogger = Depends(get_audit),
+) -> dict:
+    """SME curation (SM-2): flag incorrect or outdated content for review."""
+    import uuid as _uuid
+
+    cid = _uuid.uuid4().hex[:12]
+    store.correction_add(
+        principal.tenant_id,
+        cid,
+        f"doc:{body.doc_id}",
+        "",
+        f"flagged: {body.reason}",
+        principal.subject,
+    )
+    audit.record(
+        principal.tenant_id,
+        principal.subject,
+        "kb.flag",
+        body.doc_id,
+        "success",
+        {"reason": body.reason[:80]},
+    )
+    return {"id": cid, "doc_id": body.doc_id}

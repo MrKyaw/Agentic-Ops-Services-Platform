@@ -175,3 +175,31 @@ def test_audit_chain_and_nested_redact(tmp_path):
     lines = open(log, encoding="utf-8").read()
     assert "s3cr3t" not in lines
     assert json.loads(lines.split("\n")[0])["fields"]["nested"]["token"] == "***"
+
+
+def test_dependency_failure_is_contained():
+    """Chaos-lite (NF-A6): dead database fails closed with 401/500s, never cross-tenant data."""
+    from fastapi.testclient import TestClient
+
+    from app.audit import AuditLogger
+    from app.config import Settings
+    from app.db import Store
+    from app.deps import get_audit, get_settings, get_store
+    from app.factory import create_app
+
+    settings = Settings(
+        env="local",
+        auth_mode="dev",
+        dev_token="chaos-token",
+        dev_tenant="tenant-chaos-01",
+        audit_log_path="/tmp/chaos-audit.jsonl",
+        database_url="postgresql://postgres@127.0.0.1:59999/nodb",
+    )
+    app = create_app(settings)
+    app.dependency_overrides[get_settings] = lambda: settings
+    app.dependency_overrides[get_audit] = lambda: AuditLogger(settings.audit_log_path)
+    app.dependency_overrides[get_store] = lambda: Store(settings.database_url)
+    client = TestClient(app, raise_server_exceptions=False)
+    auth = {"Authorization": "Bearer chaos-token", "X-Tenant-ID": "tenant-chaos-01"}
+    assert client.get("/healthz").status_code == 200  # probes stay up
+    assert client.get("/v1/agents/", headers=auth).status_code in (500, 503)
