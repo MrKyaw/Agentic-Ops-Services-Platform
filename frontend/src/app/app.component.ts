@@ -14,6 +14,9 @@ import { STRINGS } from './core/messages';
           <a routerLink="/runs">{{ t.nav.runs }}</a>
           <a routerLink="/approvals">{{ t.nav.approvals }}</a>
           <a routerLink="/agents">{{ t.nav.agents }}</a>
+          <a routerLink="/prompts">Prompts</a>
+          <a routerLink="/experiments">Experiments</a>
+          <a routerLink="/builder">Builder</a>
           <a routerLink="/playground">{{ t.nav.playground }}</a>
           <a routerLink="/usage">{{ t.nav.usage }}</a>
           <a routerLink="/tenants">{{ t.nav.tenants }}</a>

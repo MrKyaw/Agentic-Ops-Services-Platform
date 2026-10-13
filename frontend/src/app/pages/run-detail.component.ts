@@ -16,6 +16,10 @@ import { STRINGS } from '../core/messages';
         <p>Status: <strong>{{ r.status }}</strong> · Agent: {{ r.agent_id }} ({{ r.agent_version }})</p>
         <h2>Output</h2>
         <pre>{{ r.output | json }}</pre>
+        <button (click)="replay()" [disabled]="streaming()">Replay answer stream</button>
+        @if (streamed()) {
+          <p aria-live="polite">{{ streamed() }}</p>
+        }
         <h2>Steps</h2>
         <ol>
           @for (step of r.steps; track step.seq) {
@@ -35,9 +39,20 @@ export class RunDetailComponent {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
   run = signal<RunDetail | null>(null);
+  streamed = signal('');
+  streaming = signal(false);
 
   constructor() {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.api.getRun(id).subscribe({ next: (run) => this.run.set(run) });
+  }
+
+  replay(): void {
+    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.streamed.set('');
+    this.streaming.set(true);
+    void this.api
+      .streamRun(id, (delta) => this.streamed.update((text) => text + delta))
+      .finally(() => this.streaming.set(false));
   }
 }

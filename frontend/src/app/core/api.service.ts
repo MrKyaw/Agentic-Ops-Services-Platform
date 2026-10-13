@@ -78,6 +78,36 @@ export class ApiService {
   getRun(id: string): Observable<RunDetail> {
     return this.http.get<RunDetail>(this.url(`/v1/runs/${id}`), { headers: this.headers(false) });
   }
+  async streamRun(id: string, onDelta: (text: string) => void): Promise<void> {
+    const response = await fetch(`${environment.apiUrl}/v1/runs/${id}/stream`, {
+      headers: {
+        Authorization: `Bearer ${this.auth.token()}`,
+        'X-Tenant-ID': this.auth.tenant(),
+      },
+    });
+    if (!response.ok || !response.body) throw new Error(`stream failed: ${response.status}`);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split('\n\n');
+      buffer = frames.pop() ?? '';
+      for (const frame of frames) {
+        for (const line of frame.split('\n')) {
+          if (line.startsWith('data:')) {
+            try {
+              onDelta((JSON.parse(line.slice(5)) as { delta: string }).delta + ' ');
+            } catch {
+              /* ignore malformed frames */
+            }
+          }
+        }
+      }
+    }
+  }
   listApprovals(): Observable<Approval[]> {
     return this.http.get<Approval[]>(this.url('/v1/approvals/'), { headers: this.headers(false) });
   }
