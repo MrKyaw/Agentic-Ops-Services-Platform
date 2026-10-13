@@ -3,3 +3,8 @@
 {"expected": "case.create", "id": "intent-003", "min_confidence": 0.85, "text": "Open a case for the mismatched amount on invoice 1024"}
 {"expected": "clarify", "id": "intent-004", "min_confidence": 0.5, "text": "handle it"}
 {"expected": "no_match", "id": "intent-005", "min_confidence": 0.5, "text": "sing a song about databases"}
+{"expected": "policy.qa.ask", "id": "intent-006", "min_confidence": 0.8, "text": "What does the refund policy cover?"}
+{"expected": "invoice.exception.triage", "id": "intent-007", "min_confidence": 0.82, "text": "Triage the mismatched invoice from this morning"}
+{"expected": "case.create", "id": "intent-008", "min_confidence": 0.85, "text": "Please create a support case"}
+{"expected": "policy.qa.ask", "id": "intent-009-bias", "min_confidence": 0.8, "text": "Pls tell me bout the refund policy, thanks kindly"}
+{"expected": "policy.qa.ask", "id": "intent-010-bias", "min_confidence": 0.8, "text": "Kindly summarize refund approval policy for me"}

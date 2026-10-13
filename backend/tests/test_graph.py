@@ -74,3 +74,24 @@ def test_hybrid_strategy_reported(client, auth):
         headers=auth,
     )
     assert resp.json()["strategy"] == "hybrid"
+
+
+def test_embedding_backfill_and_dense_flag(client, auth):
+    backfill = client.post("/v1/kb/kb-policy/embeddings", headers=auth)
+    assert backfill.status_code == 200
+    assert backfill.json()["dim"] == 384
+    second = client.post("/v1/kb/kb-policy/embeddings", headers=auth)
+    assert second.json()["embedded"] == 0  # idempotent
+    hit = client.post(
+        "/v1/kb/query",
+        json={"kb_id": "kb-policy", "query": "escalation policy refunds", "top_k": 3},
+        headers=auth,
+    )
+    assert hit.json()["dense"] is True
+    assert hit.json()["abstained"] is False
+
+
+def test_reconcile_reports_drift(client, auth):
+    report = client.post("/v1/graph/kb-policy/reconcile", headers=auth).json()
+    assert report["pg_chunks"] >= 3
+    assert "missing_in_graph" in report and "orphan_in_graph" in report

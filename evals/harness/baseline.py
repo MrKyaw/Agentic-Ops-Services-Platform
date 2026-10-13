@@ -58,3 +58,23 @@ def evaluate(dataset: Path) -> dict:
         "collisions": collisions,
         "collision_rate": collisions / total if total else 0.0,
     }
+
+
+def confusion_matrix(gold: list[dict], predictions: list[dict]) -> dict:
+    """Confusion telemetry (PI-11): per-expected counts of matched/clarified/no_match + collisions."""
+    matrix: dict[str, dict[str, int]] = {}
+    collisions = 0
+    for row, pred in zip(gold, predictions):
+        expected = row["expected"]
+        cell = matrix.setdefault(
+            expected, {"matched": 0, "clarified": 0, "no_match": 0}
+        )
+        resolution = pred.get("resolution", "no_match")
+        cell[resolution] = cell.get(resolution, 0) + 1
+        if (
+            resolution == "matched"
+            and expected in ("clarify", "no_match")
+            and pred.get("intent_id") != expected
+        ):
+            collisions += 1
+    return {"matrix": matrix, "collisions": collisions}

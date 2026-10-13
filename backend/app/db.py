@@ -58,22 +58,23 @@ class Store:
         template: str,
         variables: list,
         by: str,
+        risk: str = "low",
     ) -> None:
         self._write(
-            "INSERT INTO prompts (tenant_id, id, version, template, variables, created_by) VALUES (%s, %s, %s, %s, %s, %s)",
-            (tenant, pid, version, template, _j(variables), by),
+            "INSERT INTO prompts (tenant_id, id, version, template, variables, created_by, risk) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (tenant, pid, version, template, _j(variables), by, risk),
         )
 
     def prompt_latest(self, tenant: str, pid: str) -> dict | None:
         return self._one(
-            "SELECT tenant_id, id, version, template, variables, status FROM prompts "
+            "SELECT tenant_id, id, version, template, variables, status, created_by, risk FROM prompts "
             "WHERE tenant_id = %s AND id = %s ORDER BY version DESC LIMIT 1",
             (tenant, pid),
         )
 
     def prompt_get(self, tenant: str, pid: str, version: int) -> dict | None:
         return self._one(
-            "SELECT tenant_id, id, version, template, variables, status FROM prompts "
+            "SELECT tenant_id, id, version, template, variables, status, created_by, risk FROM prompts "
             "WHERE tenant_id = %s AND id = %s AND version = %s",
             (tenant, pid, version),
         )
@@ -127,7 +128,9 @@ class Store:
         manifest: dict,
     ) -> None:
         self._write(
-            "INSERT INTO agents (tenant_id, id, version, display_name, pattern, manifest) VALUES (%s, %s, %s, %s, %s, %s)",
+            "INSERT INTO agents (tenant_id, id, version, display_name, pattern, manifest) VALUES (%s, %s, %s, %s, %s, %s) "
+            "ON CONFLICT (tenant_id, id, version) DO UPDATE SET display_name = EXCLUDED.display_name, "
+            "pattern = EXCLUDED.pattern, manifest = EXCLUDED.manifest",
             (tenant, aid, version, display, pattern, _j(manifest)),
         )
 
@@ -175,12 +178,35 @@ class Store:
     def chunk_search_fts(
         self, tenant: str, kb: str, query: str, limit: int
     ) -> list[dict]:
-        return self._all(
+        hits = self._all(
             "SELECT id, document_id, seq, content, ts_rank(content_tsv, plainto_tsquery('english', %s)) AS rank "
             "FROM chunks WHERE tenant_id = %s AND kb_id = %s "
             "AND content_tsv @@ plainto_tsquery('english', %s) ORDER BY rank DESC LIMIT %s",
             (query, tenant, kb, query, limit),
         )
+        if hits:
+            return hits
+        # Recall fallback (RG-7): strict conjunction starves on multi-term queries;
+        # retry with OR semantics so ranking (not matching) decides. Documented heuristic.
+        from psycopg import sql
+
+        terms = [t for t in query.split() if len(t) > 2][:8]
+        if len(terms) < 2:
+            return hits
+        ors = sql.SQL(" || ").join(
+            sql.SQL("plainto_tsquery('english', {})").format(sql.Literal(t))
+            for t in terms
+        )
+        with connect(self.url) as conn:
+            rows = conn.execute(
+                sql.SQL(
+                    "SELECT id, document_id, seq, content, ts_rank(content_tsv, ({q})) AS rank "
+                    "FROM chunks WHERE tenant_id = %s AND kb_id = %s "
+                    "AND content_tsv @@ ({q}) ORDER BY rank DESC LIMIT %s"
+                ).format(q=ors),
+                (tenant, kb, limit),
+            ).fetchall()
+            return list(rows)
 
     # runs + steps + approvals
     def run_create(
@@ -360,4 +386,255 @@ class Store:
             "SELECT id, child_ids, summary, centroid FROM summary_nodes "
             "WHERE tenant_id = %s AND kb_id = %s AND level = %s ORDER BY id",
             (tenant, kb, level),
+        )
+
+    # dense vectors (pgvector)
+    def chunk_set_embedding(self, tenant: str, cid: str, vector: list[float]) -> None:
+        from pgvector.psycopg import register_vector
+
+        with connect(self.url) as conn:
+            register_vector(conn)
+            conn.execute(
+                "UPDATE chunks SET embedding = %s WHERE tenant_id = %s AND id = %s",
+                (vector, tenant, cid),
+            )
+            conn.commit()
+
+    def chunk_search_dense(
+        self, tenant: str, kb: str, vector: list[float], limit: int
+    ) -> list[dict]:
+        from pgvector.psycopg import register_vector
+
+        with connect(self.url) as conn:
+            register_vector(conn)
+            rows = conn.execute(
+                "SELECT id, document_id, seq, content, (embedding <=> %s::vector) AS distance "
+                "FROM chunks WHERE tenant_id = %s AND kb_id = %s AND embedding IS NOT NULL "
+                "ORDER BY embedding <=> %s::vector LIMIT %s",
+                (vector, tenant, kb, vector, limit),
+            ).fetchall()
+            return list(rows)
+
+    def chunks_missing_embeddings(
+        self, tenant: str, kb: str, limit: int = 64
+    ) -> list[dict]:
+        return self._all(
+            "SELECT id, content FROM chunks WHERE tenant_id = %s AND kb_id = %s AND embedding IS NULL ORDER BY document_id, seq LIMIT %s",
+            (tenant, kb, limit),
+        )
+
+    # experiments (ET-1: parameters + metrics + config refs, reproducible by id)
+    def experiment_record(
+        self,
+        tenant: str,
+        eid: str,
+        subject_type: str,
+        subject_ref: str,
+        params: dict,
+        metrics: dict,
+        by: str,
+    ) -> None:
+        self._write(
+            "INSERT INTO experiments (tenant_id, id, subject_type, subject_ref, params, metrics, created_by) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (tenant, eid, subject_type, subject_ref, _j(params), _j(metrics), by),
+        )
+
+    def experiment_list(self, tenant: str, subject_type: str = "") -> list[dict]:
+        if subject_type:
+            return self._all(
+                "SELECT id, subject_type, subject_ref, params, metrics, created_by, created_at FROM experiments "
+                "WHERE tenant_id = %s AND subject_type = %s ORDER BY created_at",
+                (tenant, subject_type),
+            )
+        return self._all(
+            "SELECT id, subject_type, subject_ref, params, metrics, created_by, created_at FROM experiments "
+            "WHERE tenant_id = %s ORDER BY created_at",
+            (tenant,),
+        )
+
+    # erasure + retention (DL-9, PV-4)
+    def kb_delete_doc(self, tenant: str, kb: str, did: str) -> dict:
+        with connect(self.url) as conn:
+            chunks = conn.execute(
+                "DELETE FROM chunks WHERE tenant_id = %s AND kb_id = %s AND document_id = %s RETURNING id",
+                (tenant, kb, did),
+            ).fetchall()
+            docs = conn.execute(
+                "DELETE FROM documents WHERE tenant_id = %s AND kb_id = %s AND id = %s RETURNING id",
+                (tenant, kb, did),
+            ).fetchall()
+            summaries = conn.execute(
+                "DELETE FROM summary_nodes WHERE tenant_id = %s AND kb_id = %s AND child_ids::jsonb ? %s RETURNING id",
+                (tenant, kb, did),
+            ).fetchall()
+            conn.commit()
+            return {
+                "chunks": len(chunks),
+                "documents": len(docs),
+                "summaries": len(summaries),
+            }
+
+    def tenant_erase(self, tenant: str) -> dict:
+        counts = {}
+        with connect(self.url) as conn:
+            for table, col in (
+                ("run_steps", "tenant_id"),
+                ("approvals", "tenant_id"),
+                ("runs", "tenant_id"),
+                ("chunks", "tenant_id"),
+                ("documents", "tenant_id"),
+                ("agents", "tenant_id"),
+                ("intents", "tenant_id"),
+                ("prompts", "tenant_id"),
+                ("usage_records", "tenant_id"),
+                ("memories", "tenant_id"),
+                ("experiments", "tenant_id"),
+                ("summary_nodes", "tenant_id"),
+                ("consents", "tenant_id"),
+                ("webhooks", "tenant_id"),
+                ("model_registry", "tenant_id"),
+                ("corrections", "tenant_id"),
+            ):
+                cur = conn.execute(f"DELETE FROM {table} WHERE {col} = %s", (tenant,))
+                counts[table] = cur.rowcount
+            conn.execute("DELETE FROM tenants WHERE id = %s", (tenant,))
+            conn.commit()
+            return counts
+
+    def tenant_export(self, tenant: str) -> dict:
+        bundle: dict = {"tenant": self.tenant_get(tenant) or {"id": tenant}}
+        for table in (
+            "agents",
+            "intents",
+            "prompts",
+            "documents",
+            "runs",
+            "usage_records",
+            "consents",
+            "model_registry",
+        ):
+            with connect(self.url) as conn:
+                rows = conn.execute(
+                    f"SELECT * FROM {table} WHERE tenant_id = %s LIMIT 1000", (tenant,)
+                ).fetchall()
+                bundle[table] = [dict(r) for r in rows]
+        return bundle
+
+    # consents / webhooks / registry / corrections / templates
+    def consent_set(
+        self, tenant: str, subject: str, purpose: str, granted: bool, policy: str = "v1"
+    ) -> None:
+        self._write(
+            "INSERT INTO consents (tenant_id, subject, purpose, policy_version, granted) VALUES (%s, %s, %s, %s, %s) "
+            "ON CONFLICT (tenant_id, subject, purpose) DO UPDATE SET granted = EXCLUDED.granted, policy_version = EXCLUDED.policy_version",
+            (tenant, subject, purpose, policy, granted),
+        )
+
+    def consent_list(self, tenant: str) -> list[dict]:
+        return self._all(
+            "SELECT subject, purpose, policy_version, granted, recorded_at FROM consents WHERE tenant_id = %s",
+            (tenant,),
+        )
+
+    def webhook_add(
+        self, tenant: str, wid: str, url: str, events: list, secret: str
+    ) -> None:
+        self._write(
+            "INSERT INTO webhooks (tenant_id, id, url, events, secret) VALUES (%s, %s, %s, %s, %s)",
+            (tenant, wid, url, _j(events), secret),
+        )
+
+    def webhook_list(self, tenant: str) -> list[dict]:
+        return self._all(
+            "SELECT id, url, events, secret FROM webhooks WHERE tenant_id = %s",
+            (tenant,),
+        )
+
+    def model_register(
+        self,
+        tenant: str,
+        mid: str,
+        version: str,
+        backend: str,
+        tier: str,
+        metadata: dict,
+    ) -> None:
+        self._write(
+            "INSERT INTO model_registry (tenant_id, id, version, backend, risk_tier, metadata) VALUES (%s, %s, %s, %s, %s, %s)",
+            (tenant, mid, version, backend, tier, _j(metadata)),
+        )
+
+    def model_list(self, tenant: str) -> list[dict]:
+        return self._all(
+            "SELECT id, version, backend, risk_tier, status, metadata FROM model_registry WHERE tenant_id = %s ORDER BY id, version",
+            (tenant,),
+        )
+
+    def model_set_status(
+        self, tenant: str, mid: str, version: str, status: str
+    ) -> None:
+        self._write(
+            "UPDATE model_registry SET status = %s WHERE tenant_id = %s AND id = %s AND version = %s",
+            (status, tenant, mid, version),
+        )
+
+    def correction_add(
+        self, tenant: str, cid: str, text: str, predicted: str, correct: str, by: str
+    ) -> None:
+        self._write(
+            "INSERT INTO corrections (tenant_id, id, text, predicted, correct, created_by) VALUES (%s, %s, %s, %s, %s, %s)",
+            (tenant, cid, text, predicted, correct, by),
+        )
+
+    def correction_list(self, tenant: str) -> list[dict]:
+        return self._all(
+            "SELECT id, text, predicted, correct FROM corrections WHERE tenant_id = %s",
+            (tenant,),
+        )
+
+    def template_list(self) -> list[dict]:
+        return self._all(
+            "SELECT id, name, description, manifest FROM workflow_templates ORDER BY id"
+        )
+
+    def _write_and_count(self, sql: str, params: tuple = ()) -> int:
+        with connect(self.url) as conn:
+            cur = conn.execute(sql, params)
+            conn.commit()
+            return cur.rowcount
+
+    # feature flags (MT-10) + retrieval configs (RG-13)
+    def flag_set(self, tenant: str, key: str, value: dict) -> None:
+        self._write(
+            "INSERT INTO feature_flags (tenant_id, key, value) VALUES (%s, %s, %s) "
+            "ON CONFLICT (tenant_id, key) DO UPDATE SET value = EXCLUDED.value, version = feature_flags.version + 1",
+            (tenant, key, _j(value)),
+        )
+
+    def flag_list(self, tenant: str) -> list[dict]:
+        return self._all(
+            "SELECT key, value, version FROM feature_flags WHERE tenant_id = %s ORDER BY key",
+            (tenant,),
+        )
+
+    def rconfig_save(
+        self, tenant: str, cid: str, strategy: str, top_k: int, min_faith: float
+    ) -> int:
+        row = self._one(
+            "SELECT COALESCE(MAX(version), 0) AS v FROM retrieval_configs WHERE tenant_id = %s AND id = %s",
+            (tenant, cid),
+        )
+        version = ((row or {}).get("v") or 0) + 1
+        self._write(
+            "INSERT INTO retrieval_configs (tenant_id, id, version, strategy, top_k, min_faithfulness) VALUES (%s, %s, %s, %s, %s, %s)",
+            (tenant, cid, version, strategy, top_k, min_faith),
+        )
+        return version
+
+    def rconfig_latest(self, tenant: str, cid: str) -> dict | None:
+        return self._one(
+            "SELECT id, version, strategy, top_k, min_faithfulness FROM retrieval_configs "
+            "WHERE tenant_id = %s AND id = %s ORDER BY version DESC LIMIT 1",
+            (tenant, cid),
         )

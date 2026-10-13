@@ -162,3 +162,51 @@ def themes(
         "terms": terms,
         "summary": roots[0]["summary"] if roots else None,
     }
+
+
+@router.post("/{kb_id}/reconcile", response_model=dict)
+def reconcile(
+    kb_id: str,
+    principal: Principal = Depends(require_principal),
+    store: Store = Depends(get_store),
+    settings: Settings = Depends(get_settings),
+    graph=Depends(get_graph),
+    audit: AuditLogger = Depends(get_audit),
+) -> dict:
+    """Consistency check (DL-5): Postgres chunks vs Neo4j chunk nodes, drift reported."""
+    pg_ids = {
+        r["id"]
+        for r in store._all(
+            "SELECT id FROM chunks WHERE tenant_id = %s AND kb_id = %s",
+            (principal.tenant_id, kb_id),
+        )
+    }
+    graph_ids: set[str] = set()
+    if graph is not None:
+        try:
+            with graph.driver.session() as session:
+                rows = session.run(
+                    "MATCH (c:Chunk {tenant: $tenant, kb: $kb}) RETURN c.id AS id",
+                    tenant=principal.tenant_id,
+                    kb=kb_id,
+                )
+                graph_ids = {r["id"] for r in rows}
+        finally:
+            graph.close()
+    missing_in_graph = sorted(pg_ids - graph_ids)
+    orphan_in_graph = sorted(graph_ids - pg_ids)
+    audit.record(
+        principal.tenant_id,
+        principal.subject,
+        "graph.reconcile",
+        kb_id,
+        "success",
+        {"drift": len(missing_in_graph) + len(orphan_in_graph)},
+    )
+    return {
+        "kb_id": kb_id,
+        "pg_chunks": len(pg_ids),
+        "graph_chunks": len(graph_ids),
+        "missing_in_graph": missing_in_graph,
+        "orphan_in_graph": orphan_in_graph,
+    }
