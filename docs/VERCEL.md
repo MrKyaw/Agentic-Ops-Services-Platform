@@ -10,7 +10,8 @@ Vercel must build `frontend/` only. In the Vercel dashboard → project Settings
 - Install command: default (`npm ci`)
 
 Without this, Vercel builds from the repo root, finds `backend/requirements.txt`,
-and fails installing `torch` (no Python 3.14 wheel). The `frontend/vercel.json`
+and fails installing `torch` (no Python 3.14 wheel) — or blows the 250 MB function
+bundle with 5.4 GB of ML dependencies. The `frontend/vercel.json`
 additionally pins the build so CLI deploys work from any directory.
 
 ## Architecture split
