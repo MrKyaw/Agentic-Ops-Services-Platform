@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     neo4j_uri: str = ""
     neo4j_user: str = "neo4j"
     neo4j_password: str = ""
+    openrouter_api_key: str = ""
+    openrouter_model: str = ""
+    openrouter_base: str = "https://openrouter.ai/api/v1"
 
     @model_validator(mode="after")
     def check_auth(self) -> "Settings":

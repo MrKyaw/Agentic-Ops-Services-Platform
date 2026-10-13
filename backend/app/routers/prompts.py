@@ -17,6 +17,7 @@ class PromptCreate(BaseModel):
     id: str = Field(min_length=3, max_length=64, pattern=r"^[a-z0-9][a-z0-9-]*$")
     template: str = Field(min_length=1)
     variables: list[str] = []
+    risk: str = "low"
 
 
 @router.get("/", response_model=list[dict])
@@ -35,6 +36,7 @@ def create_prompt(
 ) -> dict:
     latest = store.prompt_latest(principal.tenant_id, body.id)
     version = (latest["version"] + 1) if latest else 1
+    risk = body.risk if body.risk in ("low", "high") else "low"
     try:
         store.prompt_save(
             principal.tenant_id,
@@ -43,6 +45,7 @@ def create_prompt(
             body.template,
             body.variables,
             principal.subject,
+            risk,
         )
     except Exception as exc:
         raise ConflictError(str(exc)) from exc
@@ -83,6 +86,9 @@ def approve_prompt(
     hit = store.prompt_get(principal.tenant_id, pid, version)
     if hit is None:
         raise NotFoundError(f"prompt {pid}@{version} not found")
+    if hit.get("created_by") == principal.subject and hit.get("risk") == "high":
+        # Separation of duties (CP-5): author cannot be sole approver on high-risk prompts.
+        raise ConflictError("prompt author cannot approve their own high-risk version")
     store.prompt_set_status(principal.tenant_id, pid, version, "approved")
     audit.record(
         principal.tenant_id,

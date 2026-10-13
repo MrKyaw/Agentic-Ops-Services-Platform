@@ -53,3 +53,36 @@ def classify_text(
         if body.instruction_id
         else None,
     }
+
+
+class CorrectionIn(BaseModel):
+    text: str
+    predicted: str
+    correct: str
+
+
+@router.post("/corrections", response_model=dict, status_code=201)
+def add_correction(
+    body: CorrectionIn,
+    principal: Principal = Depends(require_principal),
+    store: Store = Depends(get_store),
+) -> dict:
+    import uuid as _uuid
+
+    cid = _uuid.uuid4().hex[:12]
+    store.correction_add(
+        principal.tenant_id,
+        cid,
+        body.text,
+        body.predicted,
+        body.correct,
+        principal.subject,
+    )
+    return {"id": cid}
+
+
+@router.get("/corrections", response_model=list[dict])
+def list_corrections(
+    principal: Principal = Depends(require_principal), store: Store = Depends(get_store)
+) -> list[dict]:
+    return store.correction_list(principal.tenant_id)

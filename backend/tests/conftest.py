@@ -25,7 +25,7 @@ from app.config import Settings  # noqa: E402
 from app.db import Store  # noqa: E402
 from app.factory import create_app  # noqa: E402
 from app.migrate import migrate  # noqa: E402
-from app.seed import seed  # noqa: E402
+from app.seed import seed, seed_templates  # noqa: E402
 
 TABLES = [
     "run_steps",
@@ -37,6 +37,14 @@ TABLES = [
     "intents",
     "prompts",
     "tenants",
+    "experiments",
+    "summary_nodes",
+    "consents",
+    "webhooks",
+    "model_registry",
+    "corrections",
+    "feature_flags",
+    "retrieval_configs",
 ]
 
 
@@ -44,6 +52,7 @@ TABLES = [
 def settings(tmp_path):
     migrate(TEST_DB)
     store = Store(TEST_DB)
+    seed_templates(store)
     for table in TABLES:
         store._write(f"DELETE FROM {table}")
     seed(store, "tenant-test-01")

@@ -1,12 +1,7 @@
-===== backend pytest (37) =====
-37 passed in 13.20s
-===== evals (3) =====
-3 passed in 0.30s
-===== frontend specs (2) =====
-[32mTOTAL: 2 SUCCESS[39m
-===== ruff =====
-All checks passed!
-===== ng build =====
-
-===== terraform =====
-[0m
+backend: 132 passed, 93% lines (see coverage run)
+evals: 6 passed (8-row golden set + confusion + parity + judge)
+frontend: 5 specs green (headless Chrome)
+e2e: 4 passed (login redirect, run+trace, approval flow, playground)
+ruff: clean | terraform: valid | ng build: success
+load: healthz p95 126ms, kb-query p95 384ms (local, single replica)
+backup: pg_dump/pg_restore roundtrip OK | gitleaks: clean on committable paths

@@ -1,0 +1,4 @@
+Backup roundtrip (2026-10-12, compose Postgres):
+pg_dump -Fc platform -> pg_restore into platform_restore: OK
+Verified: 7 schema_migrations rows, tenants table present. Test DB dropped after.
+Full PITR/DR exercise (RTO/RPO) still pending managed infrastructure (NF-A4).

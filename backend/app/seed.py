@@ -85,3 +85,39 @@ def seed(store: Store, tenant: str, kb: str = "kb-policy") -> None:
                 chunk,
                 {"source": "synthetic-seed-v1", "doc": did},
             )
+
+
+TEMPLATES = [
+    {
+        "id": "document-intake",
+        "name": "Document intake and classification",
+        "description": "Classify incoming documents and route exceptions.",
+        "manifest": {"pattern": "react", "tools": ["kb.search", "catalog.lookup"]},
+    },
+    {
+        "id": "case-triage",
+        "name": "Case triage with approval",
+        "description": "Triage flagged items, opening cases only with human approval.",
+        "manifest": {"pattern": "react", "tools": ["kb.search", "case.create"]},
+    },
+    {
+        "id": "policy-qa",
+        "name": "Policy Q&A with citations",
+        "description": "Answer policy questions grounded in the knowledge base.",
+        "manifest": {"pattern": "rewoo", "tools": ["kb.search"]},
+    },
+]
+
+
+def seed_templates(store: Store) -> None:
+    for template in TEMPLATES:
+        store._write(
+            "INSERT INTO workflow_templates (id, name, description, manifest) VALUES (%s, %s, %s, %s) "
+            "ON CONFLICT (id) DO NOTHING",
+            (
+                template["id"],
+                template["name"],
+                template["description"],
+                __import__("json").dumps(template["manifest"]),
+            ),
+        )

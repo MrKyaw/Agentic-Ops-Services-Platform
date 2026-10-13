@@ -26,6 +26,10 @@ python3 -m pytest evals/ -q
 terraform -chdir=infra/terraform init -backend=false && terraform -chdir=infra/terraform validate
 ```
 
+WARNING: the backend suite truncates and reseeds its target database (`TEST_DATABASE_URL`).
+Never point it at a database holding data you care about — use the compose DB
+(throwaway dev data) or a dedicated test database. Same for graph tests and Neo4j.
+
 ## Incidents (Phase 0 scope)
 
 - 401 spike: check IdP/JWKS reachability (`AUTH_MODE=oidc`) or token rotation (`dev`).

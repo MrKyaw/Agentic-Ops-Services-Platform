@@ -93,6 +93,16 @@ class ReWOORunner:
         ) as pool:
             for key, value in pool.map(_exec, plan.steps):
                 evidence[key] = value
+        if evidence and all(
+            v.startswith("unknown tool") or v == "no evidence"
+            for v in evidence.values()
+        ):
+            # Replan once (AO-3): drop the approval-gated tool and retry a reduced plan.
+            reduced = {k: v for k, v in tools.items() if k != "case.create"}
+            if reduced != tools:
+                retry = self.run(goal, reduced)
+                retry.usage["replanned"] = True
+                return retry
         if any(v == "PENDING_APPROVAL" for v in evidence.values()):
             return ReWOOresult(
                 "waiting_approval", "", plan, evidence, {"tool_calls": len(plan.steps)}

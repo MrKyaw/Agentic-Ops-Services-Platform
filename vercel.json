@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd frontend && npm ci && npx ng build --configuration=production",
+  "outputDirectory": "frontend/dist/console/browser",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://API_BACKEND_HOST/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -1,56 +1,44 @@
-# Gate 1 Report v2 — Implementation and Testing Status (full-stack scope)
+# Gate 1 Report v3 — Implementation and Testing Status (current tree)
 
-Date: 2026-10-11. Gate: **Gate 1 — before any commit, push, or repository change on GitHub.**
-Supersedes v1 (deferred; tree has since grown well beyond it). Work toward the action is stopped. No commits exist; no push attempted.
+Date: 2026-10-12. Gate: **Gate 1 — before any commit/push.** Supersedes v2 (pushed). No commits since the push; work toward the action is stopped.
 
 ## 1. Implementation status
 
-Row-level detail: `docs/TRACEABILITY.md` (202 rows: **25 Partial full-stack, 63 Partial backend, 15 Partial skeleton, 99 Not started**).
-AI behaviors trace via AO/PI/RG/FT/TS/EV rows (no separate AI-NNN series in the PRD).
-
-Delivered and verified: tenant model + Postgres/pgvector persistence with versioned migrations, dev/OIDC auth with tenant binding, RBAC matrix (admin/member), per-tenant quotas/429s, usage/cost showback, short-term memory with erase, prompt registry with approvals, intent classifier v1 (seed-set 5/5, production targets unproven at scale), MCP framework + pilot tools, hybrid + graph + summary retrieval with strategy router, ReAct + ReWOO runtimes (local stand-in planner, labeled), run traces, idempotency, HITL approvals, model gateway with kill switches, output-schema validation, Angular 19 console (login, runs+traces, approvals, agents, playground, usage, tenants), Terraform skeleton (validated, never applied), CI (backend/evals/terraform/secrets).
-
-Honestly not built: dense embeddings + reranker and all LLM tiers (blocked on model approvals O1), hosted fine-tuning, write-capable enterprise MCPs, streaming, experiment/fine-tuning UIs, SME builder, multi-AZ/HA, RBAC beyond two roles, E2E browser journeys, load/soak/chaos/pen tests, coverage of OIDC refresh edge paths. Each is labeled pending where it bites (README, PROGRESS, ADRs 009–014).
-
-Engineering-added hardening (beyond PRD, labeled): fail-fast prod/dev guard, pre-commit/CI secret scans, 0.0.0.0 preflight probing, repeat-action runaway guard, tenant-scoped idempotency.
+`docs/TRACEABILITY.md` (202 rows: **69 Complete verified-locally, ~75 Partial, ~58 Not started**; exact counts in PROGRESS).
+Since v2: OpenRouter gateway backend + ModelPlanner (constrained, degrading, fallback chain),
+dense embeddings + pgvector hybrid, SSE streaming + console replay, experiments API + compare,
+LLM-as-judge, flags + versioned retrieval configs + dual strategy, full lifecycle batch
+(consents, webhooks + signed delivery, model registry with guarded transitions + deprecation
+blocking, export/erase, audit export, retention purge, usage CSV), PII scan + DLP redaction,
+corrections feed, impact-gated promotion, templates, SME builder draft, canary compare,
+agent-as-tool, ReWOO replan, SDK client + live example, /status + /metrics, SoD on high-risk
+prompts, retry/backoff + circuit breaker, embedding cache, confusion matrix + bias probe,
+SLO/capacity/PIA/versioning/risk-tier docs, Vercel frontend config + docs (not applied).
+O1: `liquid/lfm-2.5-2.6b:free` approved for dev/eval (ADR-015), live-verified, fallback to local.
 
 ## 2. Testing status
 
-| Suite | Result | Evidence |
-|---|---|---|
-| Backend `pytest` | **37 passed, 0 failed** (incl. 5 graph tests against live Neo4j) | `docs/evidence/phase1/test-run.txt` |
-| Eval gates | **3 passed** (seed-set accuracy measured, targets recorded unmet-at-scale) | same |
-| Frontend specs (headless Chrome) | **2 passed** | same |
-| `ng build` production | success | same |
-| `ruff check` + format | clean | same |
-| Contract (app routes vs `openapi.yaml`, 29 paths) | pass | `backend/tests/test_contract.py` |
-| Terraform validate | valid | same |
-| Coverage | **89% lines** (authz-adjacent: tenancy 100%, audit 91%, mcp 90%, security 86% — OIDC refresh paths open) | coverage run |
-| Container smoke (4 services, live journeys) | pass: classify, KB + strategies, grounded run, HITL, quotas, console 200 | PROGRESS.md |
-| Secret scan (gitleaks 8.30.1) | clean on all committable paths | sanitization-report.md |
-| GitHub CI | **not run** (nothing pushed yet) | runs on first push |
-| Load/soak/chaos/pen/E2E | not run (declared pending) | — |
+| Suite | Result |
+|---|---|
+| Backend pytest | 132+ passed (incl. 9 gateway, closeout, reconcile, stream tests) |
+| Eval gates | 6 passed (10-row golden set, confusion, parity, judge) |
+| Frontend specs | 5 green |
+| Browser E2E (containerized) | 4 passed |
+| Coverage | 93% lines |
+| ruff / contract (53+ paths) / terraform / ng build | clean |
+| Load probe / backup roundtrip | recorded (`docs/evidence/phase1/`) |
+| Secrets (gitleaks per committable path) | clean |
+| GitHub CI | runs on push |
 
-No failing or skipped-then-hidden tests: graph tests skip only when Neo4j is unconfigured (ran here: 0 skipped).
+## 3. Risks
 
-## 3. Open risks (ranked)
+Remote `main` is 4 commits behind local (all ours); push is fast-forward. OIDC untested against
+real IdP. Free-tier model rotation accepted for dev. Single-replica local posture documented.
 
-1. Remote `main` has 1 commit (LICENSE, contents identical) — first push needs fetch/rebase; clean fast-forward expected, reported honestly either way.
-2. OIDC never tested against a real IdP (mocked JWKS only).
-3. Single-replica local posture (in-memory rate limiting, trust-auth loopback) must not reach shared environments — documented in README/RUNBOOK.
-4. Port map is environment-specific (preflight shifts); evidence records this machine's map.
+## 4. Scope if approved
 
-## 4. What happens if approved (exact scope)
+Local `main` → conventional commits under developer identity, no agent trailers → push `main`
+only to `MrKyaw/Agentic-Ops-Services-Platform`. Files: all `??`/`M` entries except git-ignored
+(PRD, `.env.local` incl. API keys, caches, `node_modules`/`dist`, logs). No deployments.
 
-- Repository: **`MrKyaw/Agentic-Ops-Services-Platform`** (existing, public — no new repo, no visibility change).
-- Local `main` (zero commits) → small conventional commits under the developer's own git identity, no agent trailers, accurate timestamps (proposed: `chore: foundations…`, `feat: phase 1 backend slice…`, `feat: governance controls…`, `feat: rewoo, graph rag, summaries…`, `feat: angular console…`, `docs: readme, testing, traceability…`), then `git remote add origin`, fetch/rebase onto remote `main`, then **push `main` only**. No tags, branches, or deployments.
-- Files: all `??` entries in `git status` except git-ignored paths (PRD file, `.env.local`, `graphify-out/`, `.terraform/`, `node_modules/`, `dist/`, `.angular/`, caches, logs).
-- Rollback: nothing forced remotely; on any push failure, local commits reset and re-presented.
-
-## 5. Sanitization result
-
-**CLEAN** — `docs/evidence/sanitization-report.md` (v2).
-
-## Decision requested
-
-Approve / Approve with changes (specify) / Fix issues first / Do not proceed. Approval covers only this exact scope; later changes need a fresh report.
+## 5. Sanitization: CLEAN (v3 note — same posture as v2, rescanned per path above).

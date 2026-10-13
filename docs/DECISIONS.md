@@ -98,3 +98,10 @@ Architectural Decision Records (Phase A). Conservative interpretations where the
 - Context: No approved extraction/summarization models (O1); LLM-backed KG/RAPTOR would be fake.
 - Decision: Pattern-based entity extraction + TF-IDF extractive summaries behind the same interfaces the model versions will implement. Limits documented in code and measured where possible (extraction sampling in tests).
 - Consequences: RG-8/RG-10 stay Partial until model-backed upgrades pass eval comparison.
+
+## ADR-015: Approved model for dev/eval (O1 partial)
+
+- Status: Accepted
+- Context: No Gmail → no Gemini; OpenRouter key available. Developer approves `liquid/lfm-2.5-2.6b:free` for open-source dev/eval use.
+- Decision: Pin `liquid/lfm-2.5-2.6b:free` as the default gateway model with `local-standin` fallback. Free-tier rotation risk accepted for dev; production use requires re-approval with SLO-backed models. Training-data retention warning stands (synthetic/dev data only).
+- Consequences: Model-gated rows become genuinely exercisable; quality bars still unproven at scale.

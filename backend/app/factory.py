@@ -12,6 +12,8 @@ from .routers import (
     admin,
     agents,
     approvals,
+    builder,
+    experiments,
     graph,
     intents,
     knowledge,
@@ -83,4 +85,8 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(graph.router, prefix="/v1/graph", tags=["graph"])
     app.include_router(memory.router, prefix="/v1/memory", tags=["memory"])
     app.include_router(admin.router, prefix="/v1/admin", tags=["admin"])
+    app.include_router(
+        experiments.router, prefix="/v1/experiments", tags=["experiments"]
+    )
+    app.include_router(builder.router, prefix="/v1/builder", tags=["builder"])
     return app

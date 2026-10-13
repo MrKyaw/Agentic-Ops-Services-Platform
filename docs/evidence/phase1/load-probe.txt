@@ -1,0 +1,9 @@
+Load probe (local dev machine, single replica, 2026-10-12; NOT a 2x design-capacity proof)
+Tool: 100+40 requests via stdlib + threads (no k6 installed; honest scope below)
+
+healthz:  n=100 ok=100 p50=50ms p95=126ms max=132ms
+kb-query: n=40  ok=40  p50=214ms p95=384ms max=399ms
+
+Notes: kb-query includes local embedding encode + FTS + pgvector on first call.
+Design capacity (500 concurrent runs, 100 rps, 2x proof) requires staging hardware;
+tracked as pending (NF-S3).

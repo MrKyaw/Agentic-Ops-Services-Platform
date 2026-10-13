@@ -94,6 +94,22 @@ class GraphStore:
             )
             return [r["name"] for r in rows]
 
+    def delete_doc(self, tenant: str, kb_id: str, doc_id: str) -> dict:
+        """Erasure propagation (DL-9): chunk nodes, their MENTIONS rels, and orphaned entities."""
+        with self.driver.session() as session:
+            chunks = session.run(
+                "MATCH (c:Chunk {tenant: $tenant, kb: $kb}) WHERE c.id STARTS WITH $prefix "
+                "DETACH DELETE c RETURN count(*) AS n",
+                tenant=tenant,
+                kb=kb_id,
+                prefix=f"{doc_id}-c",
+            ).single()["n"]
+            orphans = session.run(
+                "MATCH (e:Entity {tenant: $tenant}) WHERE NOT (e)<-[:MENTIONS]-() DETACH DELETE e RETURN count(*) AS n",
+                tenant=tenant,
+            ).single()["n"]
+            return {"chunks": chunks, "orphan_entities": orphans}
+
 
 def extractive_summary(texts: list[str], max_sentences: int = 3) -> str:
     sentences = [

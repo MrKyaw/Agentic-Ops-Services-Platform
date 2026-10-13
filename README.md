@@ -23,7 +23,7 @@ A multi-tenant foundation for building, evaluating, deploying, and operating age
 
 Enterprise service work is document-heavy, rules-heavy, and scattered across systems. Ad hoc agent projects duplicate effort, open uncontrolled data paths, and stall at proof of concept. This platform is the shared engineering foundation that moves agentic use cases from approval to production in weeks: a modular orchestration runtime (ReAct today, ReWOO today, additional patterns behind the same interface), MCP servers as the only agent-to-system path, a hybrid retrieval stack (FTS + TF-IDF + RRF baseline, knowledge-graph retrieval, extractive summary trees), a versioned prompt registry with approval workflow, layered intent classification that clarifies instead of misrouting, and run history with full traces plus human-in-the-loop approvals.
 
-Who it serves: platform engineers, agent developers, domain SMEs, ML practitioners, tenant admins, business sponsors, risk/audit, SRE, and partner UI/API teams. See `docs/PRODUCT_OVERVIEW.md` and the full requirement set in `docs/TRACEABILITY.md` (202 rows; the planning PRD itself stays local-only — see `docs/DECISIONS.md` ADR-006).
+Who it serves: platform engineers, agent developers, domain SMEs, ML practitioners, tenant admins, business sponsors, risk/audit, SRE, and partner UI/API teams. See `docs/PRODUCT_OVERVIEW.md` and the full requirement set in `docs/TRACEABILITY.md` (202 rows: 69 Complete as verified locally, 75 Partial with documented gaps, 58 blocked on external providers/environments; the planning PRD itself stays local-only — see `docs/DECISIONS.md` ADR-006).
 
 ## Architecture
 
@@ -40,7 +40,7 @@ flowchart TB
   GW --> OBS["Structured logs + audit chain + usage metering"]
 ```
 
-The backend is async Python (FastAPI) with Postgres as the system of record, Neo4j for extracted entity graphs, and a provider-agnostic model gateway (local deterministic backend for dev/tests; hosted backends arrive with model approvals). The Angular 19 console talks to the same versioned REST API (`openapi.yaml`, 29 paths) that partner teams use. Infrastructure is Terraform-managed AWS behind a compose-based local topology (API, web console, Postgres+pgvector, Neo4j).
+The backend is async Python (FastAPI) with Postgres as the system of record, Neo4j for extracted entity graphs, and a provider-agnostic model gateway (local deterministic backend for dev/tests; hosted backends arrive with model approvals). The Angular 19 console talks to the same versioned REST API (`openapi.yaml`, 53 paths) that partner teams use. Infrastructure is Terraform-managed AWS behind a compose-based local topology (API, web console, Postgres+pgvector, Neo4j).
 
 Stack rationale: Python for the AI ecosystem, Angular per enterprise UI requirements, Postgres+pgvector for transactional-plus-vector consistency, Neo4j for thematic/graph retrieval, containers for reproducible environments. Each choice and its deferred alternative is recorded in `docs/DECISIONS.md`.
 
@@ -112,7 +112,7 @@ cd frontend && npx ng test --watch=false --browsers=ChromeHeadless
 terraform -chdir=infra/terraform validate
 ```
 
-Current state: 37 backend tests + 3 eval gates + 2 frontend specs green; ~90% backend line coverage; golden-set intent accuracy reported per run with production targets (F1 95%+, collision <0.5%) enforced at promotion, not on the seed set. What's not yet covered: load/soak, chaos, penetration testing, hosted-model evals — tracked in `docs/PROGRESS.md`, never silently omitted.
+Current state: 132 backend tests + 6 eval gates + 5 frontend specs + 4 browser journeys green; 93% backend line coverage; golden-set intent accuracy reported per run with production targets (F1 95%+, collision <0.5%) enforced at promotion, not on the seed set. What's not yet covered: load/soak, chaos, penetration testing, hosted-model evals — tracked in `docs/PROGRESS.md`, never silently omitted.
 
 ## Security and privacy
 

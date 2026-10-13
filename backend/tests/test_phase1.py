@@ -157,3 +157,55 @@ def test_rewoo_run_plan_solve_trace(client, auth):
     assert kinds[0] == "intent"
     assert kinds.count("model") == 1  # plan only: fewer model calls than ReAct
     assert "Evidence:" in created.json()["answer"]
+
+
+def test_run_stream_sse_frames(client, auth):
+    created = client.post(
+        "/v1/runs/",
+        json={"input": {"message": "Why was invoice 88123 flagged?"}},
+        headers=auth,
+    )
+    stream = client.get(f"/v1/runs/{created.json()['id']}/stream", headers=auth)
+    assert stream.status_code == 200
+    assert stream.headers["content-type"].startswith("text/event-stream")
+    assert "event: done" in stream.text
+    assert "data:" in stream.text
+    assert client.get("/v1/runs/nope-missing/stream", headers=auth).status_code == 404
+
+
+def test_experiments_record_list_compare(client, auth):
+    first = client.post(
+        "/v1/experiments/",
+        json={
+            "subject_type": "prompt",
+            "subject_ref": "triage-system@2",
+            "params": {"k": 5},
+            "metrics": {"accuracy": 0.8},
+        },
+        headers=auth,
+    )
+    assert first.status_code == 201
+    second = client.post(
+        "/v1/experiments/",
+        json={
+            "subject_type": "prompt",
+            "subject_ref": "triage-system@3",
+            "params": {"k": 8},
+            "metrics": {"accuracy": 0.85},
+        },
+        headers=auth,
+    )
+    listed = client.get("/v1/experiments/?subject_type=prompt", headers=auth).json()
+    assert len(listed) == 2
+    compared = client.get(
+        f"/v1/experiments/compare?ids={first.json()['id']},{second.json()['id']}",
+        headers=auth,
+    ).json()
+    assert compared["metric_keys"] == ["accuracy"]
+    assert [row["accuracy"] for row in compared["table"]] == [0.8, 0.85]
+    assert (
+        client.post(
+            "/v1/experiments/", json={"subject_type": "nope"}, headers=auth
+        ).status_code
+        == 422
+    )

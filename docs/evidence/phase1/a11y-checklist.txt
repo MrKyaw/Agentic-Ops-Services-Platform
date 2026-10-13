@@ -1,0 +1,8 @@
+Accessibility spot-check (manual, WCAG 2.1 AA target; automated axe scan pending):
+- All form inputs have associated <label> (visible or visually-hidden): YES
+- Focus visible (:focus-visible 3px outline): YES
+- Live regions for async results (aria-live on stream/approval status): YES (stream, approvals)
+- Keyboard: all actions are native buttons/links/inputs, reachable by Tab: YES
+- Color contrast of nav (#cfe0ff on #1a2332): high, estimated pass (instrumented check pending)
+- Reduced motion: no animations shipped: N/A
+- Screen-reader full pass: PENDING (needs NVDA/VoiceOver session)

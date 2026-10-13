@@ -48,6 +48,38 @@ paths:
                 additionalProperties: true
                 type: object
                 title: Response Root  Get
+  /status:
+    get:
+      tags:
+      - system
+      summary: Status
+      description: 'Public status rollup (OR-6): component health, no tenant data.'
+      operationId: status_status_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Status Status Get
+  /metrics:
+    get:
+      tags:
+      - system
+      summary: Metrics
+      description: Golden-signal counters (OB-2, single-replica scope).
+      operationId: metrics_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Metrics Metrics Get
   /v1/tenants/:
     get:
       tags:
@@ -381,6 +413,126 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/agents/{agent_id}/promote:
+    post:
+      tags:
+      - agents
+      summary: Promote Agent
+      description: Production promotion requires a business impact definition (SM-5).
+      operationId: promote_agent_v1_agents__agent_id__promote_post
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Agent Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Promote Agent V1 Agents  Agent Id  Promote Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/agents/templates/all:
+    get:
+      tags:
+      - agents
+      summary: List Templates
+      operationId: list_templates_v1_agents_templates_all_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Templates V1 Agents Templates All Get
+  /v1/agents/{agent_id}/canary:
+    post:
+      tags:
+      - agents
+      summary: Canary Compare
+      description: 'Shadow execution (AO-18, ET-6): same input through two patterns,
+        agreement reported.'
+      operationId: canary_compare_v1_agents__agent_id__canary_post
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Agent Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CanaryIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Canary Compare V1 Agents  Agent Id  Canary Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/prompts/:
     get:
       tags:
@@ -649,6 +801,89 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/intents/corrections:
+    post:
+      tags:
+      - intents
+      summary: Add Correction
+      operationId: add_correction_v1_intents_corrections_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectionIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Add Correction V1 Intents Corrections Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - intents
+      summary: List Corrections
+      operationId: list_corrections_v1_intents_corrections_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Corrections V1 Intents Corrections Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/kb/ingest:
     post:
       tags:
@@ -693,6 +928,102 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/kb/{kb_id}/docs/{doc_id}:
+    delete:
+      tags:
+      - knowledge
+      summary: Delete Doc
+      description: 'Erasure propagation (DL-9, PV-4): chunks, embeddings, summaries,
+        graph nodes.'
+      operationId: delete_doc_v1_kb__kb_id__docs__doc_id__delete
+      parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Kb Id
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Doc Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Delete Doc V1 Kb  Kb Id  Docs  Doc Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/kb/{kb_id}/embeddings:
+    post:
+      tags:
+      - knowledge
+      summary: Backfill Embeddings
+      operationId: backfill_embeddings_v1_kb__kb_id__embeddings_post
+      parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Kb Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Backfill Embeddings V1 Kb  Kb Id  Embeddings Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/kb/query:
     post:
       tags:
@@ -731,6 +1062,50 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Query V1 Kb Query Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/kb/configs:
+    post:
+      tags:
+      - knowledge
+      summary: Save Retrieval Config
+      operationId: save_retrieval_config_v1_kb_configs_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetrievalConfigIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Save Retrieval Config V1 Kb Configs Post
         '422':
           description: Validation Error
           content:
@@ -865,6 +1240,49 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Get Run V1 Runs  Rid  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/runs/{rid}/stream:
+    get:
+      tags:
+      - runs
+      summary: Stream Run
+      description: Replay a completed run's answer as SSE (live token streaming pending
+        background execution).
+      operationId: stream_run_v1_runs__rid__stream_get
+      parameters:
+      - name: rid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rid
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
         '422':
           description: Validation Error
           content:
@@ -1261,6 +1679,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/graph/{kb_id}/reconcile:
+    post:
+      tags:
+      - graph
+      summary: Reconcile
+      description: 'Consistency check (DL-5): Postgres chunks vs Neo4j chunk nodes,
+        drift reported.'
+      operationId: reconcile_v1_graph__kb_id__reconcile_post
+      parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Kb Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Reconcile V1 Graph  Kb Id  Reconcile Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/memory/{agent_id}:
     get:
       tags:
@@ -1487,6 +1951,770 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/consents:
+    post:
+      tags:
+      - admin
+      summary: Set Consent
+      operationId: set_consent_v1_admin_consents_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Set Consent V1 Admin Consents Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - admin
+      summary: List Consents
+      operationId: list_consents_v1_admin_consents_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Consents V1 Admin Consents Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/webhooks:
+    post:
+      tags:
+      - admin
+      summary: Add Webhook
+      operationId: add_webhook_v1_admin_webhooks_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Add Webhook V1 Admin Webhooks Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - admin
+      summary: List Webhooks
+      operationId: list_webhooks_v1_admin_webhooks_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Webhooks V1 Admin Webhooks Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/models:
+    post:
+      tags:
+      - admin
+      summary: Register Model
+      operationId: register_model_v1_admin_models_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Register Model V1 Admin Models Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - admin
+      summary: List Models
+      operationId: list_models_v1_admin_models_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Models V1 Admin Models Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/models/{mid}/{version}/status:
+    post:
+      tags:
+      - admin
+      summary: Model Status
+      operationId: model_status_v1_admin_models__mid___version__status_post
+      parameters:
+      - name: mid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Mid
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Version
+      - name: status
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Status
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Model Status V1 Admin Models  Mid   Version  Status
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/export:
+    get:
+      tags:
+      - admin
+      summary: Export Tenant
+      operationId: export_tenant_v1_admin_export_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Export Tenant V1 Admin Export Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/tenant:
+    delete:
+      tags:
+      - admin
+      summary: Erase Tenant
+      operationId: erase_tenant_v1_admin_tenant_delete
+      parameters:
+      - name: confirm
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Confirm
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Erase Tenant V1 Admin Tenant Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/audit-export:
+    get:
+      tags:
+      - admin
+      summary: Audit Export
+      operationId: audit_export_v1_admin_audit_export_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/purge:
+    post:
+      tags:
+      - admin
+      summary: Purge Retention
+      operationId: purge_retention_v1_admin_purge_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurgeIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Purge Retention V1 Admin Purge Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/usage.csv:
+    get:
+      tags:
+      - admin
+      summary: Usage Csv
+      operationId: usage_csv_v1_admin_usage_csv_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/flags:
+    get:
+      tags:
+      - admin
+      summary: List Flags
+      operationId: list_flags_v1_admin_flags_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Flags V1 Admin Flags Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - admin
+      summary: Set Flag
+      operationId: set_flag_v1_admin_flags_put
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlagIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Set Flag V1 Admin Flags Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/experiments/:
+    post:
+      tags:
+      - experiments
+      summary: Record Experiment
+      operationId: record_experiment_v1_experiments__post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExperimentIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Record Experiment V1 Experiments  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - experiments
+      summary: List Experiments
+      operationId: list_experiments_v1_experiments__get
+      parameters:
+      - name: subject_type
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Subject Type
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Experiments V1 Experiments  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/experiments/compare:
+    get:
+      tags:
+      - experiments
+      summary: Compare Experiments
+      operationId: compare_experiments_v1_experiments_compare_get
+      parameters:
+      - name: ids
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Ids
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Compare Experiments V1 Experiments Compare Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/builder/draft:
+    post:
+      tags:
+      - builder
+      summary: Draft Workflow
+      operationId: draft_workflow_v1_builder_draft_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Draft Workflow V1 Builder Draft Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AgentCreate:
@@ -1543,6 +2771,23 @@ components:
       - displayName
       - pattern
       title: AgentOut
+    CanaryIn:
+      properties:
+        version_a:
+          type: string
+          title: Version A
+          default: 0.1.0
+        version_b:
+          type: string
+          title: Version B
+          default: 0.1.0
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - message
+      title: CanaryIn
     ClassifyIn:
       properties:
         text:
@@ -1556,6 +2801,44 @@ components:
       required:
       - text
       title: ClassifyIn
+    ConsentIn:
+      properties:
+        subject:
+          type: string
+          title: Subject
+        purpose:
+          type: string
+          title: Purpose
+        granted:
+          type: boolean
+          title: Granted
+          default: true
+        policy_version:
+          type: string
+          title: Policy Version
+          default: v1
+      type: object
+      required:
+      - subject
+      - purpose
+      title: ConsentIn
+    CorrectionIn:
+      properties:
+        text:
+          type: string
+          title: Text
+        predicted:
+          type: string
+          title: Predicted
+        correct:
+          type: string
+          title: Correct
+      type: object
+      required:
+      - text
+      - predicted
+      - correct
+      title: CorrectionIn
     DecideIn:
       properties:
         decision:
@@ -1565,6 +2848,68 @@ components:
       required:
       - decision
       title: DecideIn
+    DraftIn:
+      properties:
+        objective:
+          type: string
+          minLength: 10
+          title: Objective
+        decision_rules:
+          items:
+            type: string
+          type: array
+          title: Decision Rules
+          default: []
+        escalation:
+          type: string
+          title: Escalation
+          default: human approval for writes
+        pattern:
+          type: string
+          title: Pattern
+          default: react
+      type: object
+      required:
+      - objective
+      title: DraftIn
+    ExperimentIn:
+      properties:
+        subject_type:
+          type: string
+          pattern: ^(prompt|retrieval|agent|model)$
+          title: Subject Type
+        subject_ref:
+          type: string
+          title: Subject Ref
+          default: ''
+        params:
+          additionalProperties: true
+          type: object
+          title: Params
+          default: {}
+        metrics:
+          additionalProperties: true
+          type: object
+          title: Metrics
+          default: {}
+      type: object
+      required:
+      - subject_type
+      title: ExperimentIn
+    FlagIn:
+      properties:
+        key:
+          type: string
+          title: Key
+        value:
+          additionalProperties: true
+          type: object
+          title: Value
+          default: {}
+      type: object
+      required:
+      - key
+      title: FlagIn
     HTTPValidationError:
       properties:
         detail:
@@ -1615,6 +2960,49 @@ components:
       required:
       - scope
       title: KillIn
+    ModelIn:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: string
+          title: Version
+          default: '1.0'
+        backend:
+          type: string
+          title: Backend
+          default: local-standin
+        risk_tier:
+          type: string
+          title: Risk Tier
+          default: low
+        metadata:
+          additionalProperties: true
+          type: object
+          title: Metadata
+          default: {}
+      type: object
+      required:
+      - id
+      title: ModelIn
+    PromoteIn:
+      properties:
+        business_metric:
+          type: string
+          title: Business Metric
+        baseline:
+          type: string
+          title: Baseline
+        target:
+          type: string
+          title: Target
+      type: object
+      required:
+      - business_metric
+      - baseline
+      - target
+      title: PromoteIn
     PromptCreate:
       properties:
         id:
@@ -1633,11 +3021,23 @@ components:
           type: array
           title: Variables
           default: []
+        risk:
+          type: string
+          title: Risk
+          default: low
       type: object
       required:
       - id
       - template
       title: PromptCreate
+    PurgeIn:
+      properties:
+        older_than_days:
+          type: integer
+          title: Older Than Days
+          default: 90
+      type: object
+      title: PurgeIn
     QueryIn:
       properties:
         kb_id:
@@ -1660,6 +3060,10 @@ components:
           type: string
           title: Strategy
           default: auto
+        config:
+          type: string
+          title: Config
+          default: ''
       type: object
       required:
       - query
@@ -1676,6 +3080,27 @@ components:
           default: 1000
       type: object
       title: QuotasIn
+    RetrievalConfigIn:
+      properties:
+        id:
+          type: string
+          title: Id
+        strategy:
+          type: string
+          title: Strategy
+          default: auto
+        top_k:
+          type: integer
+          title: Top K
+          default: 5
+        min_faithfulness:
+          type: number
+          title: Min Faithfulness
+          default: 0.0
+      type: object
+      required:
+      - id
+      title: RetrievalConfigIn
     RunIn:
       properties:
         agent_id:
@@ -1775,3 +3200,22 @@ components:
       - msg
       - type
       title: ValidationError
+    WebhookIn:
+      properties:
+        id:
+          type: string
+          title: Id
+        url:
+          type: string
+          title: Url
+        events:
+          items:
+            type: string
+          type: array
+          title: Events
+          default: []
+      type: object
+      required:
+      - id
+      - url
+      title: WebhookIn

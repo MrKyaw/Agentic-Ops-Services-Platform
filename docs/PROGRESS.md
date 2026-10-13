@@ -44,3 +44,18 @@
 - Compose now: api (`Agentic-Ops-Services-phase1`), db (`Agentic-Ops-Services-db`), web (`Agentic-Ops-Services-web`), graph (`Agentic-Ops-Services-graph`). No committed secrets (required passwords from git-ignored env; CI uses trust/auth-none ephemerals).
 - Traceability: 25 full-stack + 63 backend + 15 skeleton Partial, 99 Not started, of 202.
 - Still out of reach locally: dense embeddings + reranker and LLM tiers (blocked on model approvals O1), hosted fine-tuning, write-capable enterprise MCPs, streaming, multi-AZ/HA, load/soak/chaos/pen tests, E2E browser journeys. Each is labeled pending where it bites.
+
+## 2026-10-12 — First real model wired (uncommitted)
+
+- OpenRouter backend in the model gateway (OpenAI-compatible, timeouts, usage passthrough, key/model via env only) + `ModelPlanner` (constrained to registered tools, refuses unregistered choices, degrades to finish-with-context on provider failure). 8 new gateway tests green (mocked transport).
+- Live proof with `qwen/qwen-2.5-7b-instruct` (free tier): model reasoned ("To find out why invoice 88123 was flagged, I need to search…"), called `kb.search`, got evidence, answered grounded. Repeat guard terminated the loop.
+- Retrieval fix from the same session (RG-7 recall): FTS OR-fallback when conjunction starves + regression test. Backend suite now 100 green.
+- Key handling: key lives in the user's other project `.env`, copied to git-ignored `.env.local` only; free-tier data-retention warning recorded in code + `.env.example`.
+- Still uncommitted: gateway code, planner, tests, compose/RUNBOOK/`.env.example` updates. Fresh approval needed before commit (tree exceeds Gate 1 v2 scope).
+
+## 2026-10-12 — Close-out campaign (uncommitted)
+
+- Dense embeddings live (MiniLM + pgvector HNSW, backfill endpoint, 3-signal RRF with observable `dense` flag); OpenRouter chat backend with retry/backoff + circuit breaker; ModelPlanner with prompt-injection isolation; SSE answer streaming + console replay; experiments API + compare; LLM-as-judge with calibration records; flags + versioned retrieval configs + dual (LightRAG-style) strategy; lifecycle features (consents, webhooks + signed delivery, model registry with guarded transitions + deprecation blocking, export/erase, audit export, retention purge, usage CSV); PII scan + DLP redaction; corrections feed; impact-gated promotion; templates; SME builder draft; canary compare; agent-as-tool (depth-capped); ReWOO replan; SDK client + live-verified example; /status + /metrics; SoD on high-risk prompts.
+- Verification: 132 backend + 6 eval + 5 frontend + 4 E2E green, 93% lines, ruff clean, contract 53 paths, load probe + backup roundtrip recorded, secrets clean.
+- Traceability: 68 Complete (verified locally), 72 Partial, 62 Not started, of 202. Remaining Not-started rows need external environments/providers (fine-tuning execution, Bedrock/SageMaker, IdP MFA, pen test, multi-AZ/HA, production SLO proof, BFF, LightRAG-full, gRPC) or are documented process items.
+- E2E hardening along the way: missing HttpClient provider, missing prod fileReplacement, cold-start warmup, trace race fixed.
