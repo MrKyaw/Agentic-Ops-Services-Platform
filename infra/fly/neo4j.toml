@@ -1,4 +1,4 @@
-app = "agentic-ops-graph"
+app = "agentic-ops-neo4j"
 primary_region = "ord"
 
 [build]
