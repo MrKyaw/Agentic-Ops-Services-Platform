@@ -14,6 +14,7 @@ from .routers import (
     approvals,
     builder,
     experiments,
+    finetune,
     graph,
     intents,
     knowledge,
@@ -89,4 +90,5 @@ def create_app(settings: Settings) -> FastAPI:
         experiments.router, prefix="/v1/experiments", tags=["experiments"]
     )
     app.include_router(builder.router, prefix="/v1/builder", tags=["builder"])
+    app.include_router(finetune.router, prefix="/v1/finetune-jobs", tags=["finetune"])
     return app

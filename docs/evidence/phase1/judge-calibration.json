@@ -1,0 +1,28 @@
+{
+  "version": "judge-faithfulness-v1",
+  "records": [
+    {
+      "human": "supported",
+      "judge": "supported",
+      "score": 1.0,
+      "match": true,
+      "error": false
+    },
+    {
+      "human": "unsupported",
+      "judge": "unsupported",
+      "score": 0.0,
+      "match": true,
+      "error": false
+    },
+    {
+      "human": "unsupported",
+      "judge": "unsupported",
+      "score": 0.0,
+      "match": true,
+      "error": false
+    }
+  ],
+  "agreement": 1.0,
+  "note": "pilot n=3; full calibration against human-labeled set pending"
+}

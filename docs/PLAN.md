@@ -45,3 +45,9 @@ Every FR/NFR row gets ≥1 automated test; 100% journeys E2E in containers; Gate
 ## Gate A claim
 
 Graphify smoke PASS, PRD fully read, understanding + traceability (202/202 IDs) + architecture + plan present. Re-index policy recorded. Ready for review; no commit or deploy attempted.
+
+## Feedback triage (LO-5)
+
+Production signals (ratings, SME corrections in `/v1/intents/corrections`, failure clusters)
+triage on a regular cadence into backlog items and golden-set additions. Corrections already
+feed the labeled dataset (PI-12); the cadence itself is an operational commitment.

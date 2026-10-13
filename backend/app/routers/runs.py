@@ -330,6 +330,13 @@ def create_run(
         )
         if entry is not None and entry["status"] in ("deprecated", "retired"):
             raise UnavailableError(f"model {registry_ref} is {entry['status']}")
+        if entry is not None and entry["status"] in ("approved", "deployed"):
+            # FT-13: registry entries serve through the gateway by recorded backend.
+            manifest = dict(manifest)
+            manifest["model"] = {
+                **(manifest.get("model") or {}),
+                "primary": entry["backend"],
+            }
     secrets = {
         "api_key": settings.openrouter_api_key,
         "model": settings.openrouter_model,

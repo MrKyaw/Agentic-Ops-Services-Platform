@@ -70,3 +70,24 @@ def compare_experiments(
             for r in rows
         ],
     }
+
+
+@router.get("/trends", response_model=dict)
+def metric_trends(
+    metric: str = "accuracy",
+    principal: Principal = Depends(require_principal),
+    store: Store = Depends(get_store),
+) -> dict:
+    """Quality trends (EV-7, ET-7): daily averages per metric from recorded experiments."""
+    rows = store._all(
+        "SELECT created_at::date AS day, AVG((metrics->>%s)::float) AS avg, COUNT(*) AS n FROM experiments "
+        "WHERE tenant_id = %s AND metrics ? %s GROUP BY day ORDER BY day",
+        (metric, principal.tenant_id, metric),
+    )
+    return {
+        "metric": metric,
+        "points": [
+            {"day": str(r["day"]), "avg": round(float(r["avg"]), 4), "n": r["n"]}
+            for r in rows
+        ],
+    }

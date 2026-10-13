@@ -210,3 +210,33 @@ def reconcile(
         "missing_in_graph": missing_in_graph,
         "orphan_in_graph": orphan_in_graph,
     }
+
+
+@router.post("/{kb_id}/drift", response_model=dict)
+def drift_check(
+    kb_id: str,
+    body: dict,
+    principal: Principal = Depends(require_principal),
+    store: Store = Depends(get_store),
+) -> dict:
+    """Embedding drift (LO-4, TS-7): cosine distance between a baseline centroid and current summaries."""
+    import math as _math
+
+    nodes = store.summary_list(principal.tenant_id, kb_id, 0)
+    if not nodes:
+        raise NotFoundError(f"no summaries for kb {kb_id}")
+    current: dict[str, float] = {}
+    for node in nodes:
+        for term, weight in (node.get("centroid") or {}).items():
+            current[term] = current.get(term, 0.0) + float(weight)
+    baseline = {k: float(v) for k, v in (body.get("baseline") or {}).items()}
+    dot = sum(baseline.get(t, 0.0) * w for t, w in current.items())
+    bn = _math.sqrt(sum(v * v for v in baseline.values()))
+    cn = _math.sqrt(sum(v * v for v in current.values()))
+    distance = 1.0 - (dot / (bn * cn) if bn and cn else 0.0)
+    return {
+        "kb_id": kb_id,
+        "distance": round(distance, 4),
+        "drifted": distance > 0.5,
+        "threshold": 0.5,
+    }

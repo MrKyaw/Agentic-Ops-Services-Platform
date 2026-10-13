@@ -18,3 +18,15 @@ provider "aws" {
     }
   }
 }
+
+# NOT APPLIED (IN-4/IN-5): cost budget alert + autoscaling posture, validated with plan only.
+# resource "aws_budgets_budget" "platform" {
+#   name         = "services-ai-platform-${var.environment}"
+#   budget_type  = "COST"
+#   limit_amount = "5000"
+#   limit_unit   = "USD"
+#   time_unit    = "MONTHLY"
+# }
+#
+# EKS node-group autoscaling (NF-S1) lands with the cluster definition once the
+# backend-host decision (EKS vs managed container service) is recorded.

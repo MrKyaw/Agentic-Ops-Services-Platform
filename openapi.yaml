@@ -533,6 +533,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/agents/dashboard/summary:
+    get:
+      tags:
+      - agents
+      summary: Dashboard Summary
+      description: 'BFF rollup (BE-3): one call for runs + approvals + usage overview.'
+      operationId: dashboard_summary_v1_agents_dashboard_summary_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Dashboard Summary V1 Agents Dashboard Summary Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/prompts/:
     get:
       tags:
@@ -1106,6 +1145,133 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Save Retrieval Config V1 Kb Configs Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/kb/catalog:
+    get:
+      tags:
+      - knowledge
+      summary: Catalog
+      description: 'Data catalog entries (DG-1): sources with classification, chunk
+        counts, provenance.'
+      operationId: catalog_v1_kb_catalog_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Catalog V1 Kb Catalog Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/kb/stats:
+    get:
+      tags:
+      - knowledge
+      summary: Kb Stats
+      description: 'Quality monitoring basics (DG-3): chunk counts, staleness, per-kb
+        breakdown.'
+      operationId: kb_stats_v1_kb_stats_get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Kb Stats V1 Kb Stats Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/kb/flag:
+    post:
+      tags:
+      - knowledge
+      summary: Flag Content
+      description: 'SME curation (SM-2): flag incorrect or outdated content for review.'
+      operationId: flag_content_v1_kb_flag_post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/app__routers__knowledge__FlagIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Flag Content V1 Kb Flag Post
         '422':
           description: Validation Error
           content:
@@ -1719,6 +1885,60 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Reconcile V1 Graph  Kb Id  Reconcile Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/graph/{kb_id}/drift:
+    post:
+      tags:
+      - graph
+      summary: Drift Check
+      description: 'Embedding drift (LO-4, TS-7): cosine distance between a baseline
+        centroid and current summaries.'
+      operationId: drift_check_v1_graph__kb_id__drift_post
+      parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Kb Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Body
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Drift Check V1 Graph  Kb Id  Drift Post
         '422':
           description: Validation Error
           content:
@@ -2521,7 +2741,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FlagIn'
+              $ref: '#/components/schemas/app__routers__admin__FlagIn'
       responses:
         '200':
           description: Successful Response
@@ -2671,6 +2891,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/experiments/trends:
+    get:
+      tags:
+      - experiments
+      summary: Metric Trends
+      description: 'Quality trends (EV-7, ET-7): daily averages per metric from recorded
+        experiments.'
+      operationId: metric_trends_v1_experiments_trends_get
+      parameters:
+      - name: metric
+        in: query
+        required: false
+        schema:
+          type: string
+          default: accuracy
+          title: Metric
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Metric Trends V1 Experiments Trends Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/builder/draft:
     post:
       tags:
@@ -2709,6 +2976,223 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Draft Workflow V1 Builder Draft Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/finetune-jobs/:
+    post:
+      tags:
+      - finetune
+      summary: Create Job
+      operationId: create_job_v1_finetune_jobs__post
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Create Job V1 Finetune Jobs  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - finetune
+      summary: List Jobs
+      operationId: list_jobs_v1_finetune_jobs__get
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Jobs V1 Finetune Jobs  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/finetune-jobs/{jid}:
+    get:
+      tags:
+      - finetune
+      summary: Get Job
+      operationId: get_job_v1_finetune_jobs__jid__get
+      parameters:
+      - name: jid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Jid
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Job V1 Finetune Jobs  Jid  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/finetune-jobs/{jid}/cancel:
+    post:
+      tags:
+      - finetune
+      summary: Cancel Job
+      operationId: cancel_job_v1_finetune_jobs__jid__cancel_post
+      parameters:
+      - name: jid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Jid
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Cancel Job V1 Finetune Jobs  Jid  Cancel Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/finetune-jobs/{jid}/approve:
+    post:
+      tags:
+      - finetune
+      summary: Approve Job
+      description: 'Two-person rule (FT-9): high-risk tiers need an approver distinct
+        from the creator.'
+      operationId: approve_job_v1_finetune_jobs__jid__approve_post
+      parameters:
+      - name: jid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Jid
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      - name: X-Tenant-ID
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Tenant-Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Approve Job V1 Finetune Jobs  Jid  Approve Post
         '422':
           description: Validation Error
           content:
@@ -2896,20 +3380,6 @@ components:
       required:
       - subject_type
       title: ExperimentIn
-    FlagIn:
-      properties:
-        key:
-          type: string
-          title: Key
-        value:
-          additionalProperties: true
-          type: object
-          title: Value
-          default: {}
-      type: object
-      required:
-      - key
-      title: FlagIn
     HTTPValidationError:
       properties:
         detail:
@@ -2942,11 +3412,41 @@ components:
           type: array
           title: Acl
           default: []
+        classification:
+          type: string
+          title: Classification
+          default: internal
       type: object
       required:
       - doc_id
       - content
       title: IngestIn
+    JobIn:
+      properties:
+        base_model:
+          type: string
+          title: Base Model
+        method:
+          type: string
+          title: Method
+          default: lora
+        dataset_ref:
+          type: string
+          title: Dataset Ref
+          default: ''
+        hyperparameters:
+          additionalProperties: true
+          type: object
+          title: Hyperparameters
+          default: {}
+        cost_estimate_ack:
+          type: boolean
+          title: Cost Estimate Ack
+          default: false
+      type: object
+      required:
+      - base_model
+      title: JobIn
     KillIn:
       properties:
         scope:
@@ -3064,6 +3564,10 @@ components:
           type: string
           title: Config
           default: ''
+        max_classification:
+          type: string
+          title: Max Classification
+          default: restricted
       type: object
       required:
       - query
@@ -3219,3 +3723,31 @@ components:
       - id
       - url
       title: WebhookIn
+    app__routers__admin__FlagIn:
+      properties:
+        key:
+          type: string
+          title: Key
+        value:
+          additionalProperties: true
+          type: object
+          title: Value
+          default: {}
+      type: object
+      required:
+      - key
+      title: FlagIn
+    app__routers__knowledge__FlagIn:
+      properties:
+        doc_id:
+          type: string
+          title: Doc Id
+        reason:
+          type: string
+          minLength: 3
+          title: Reason
+      type: object
+      required:
+      - doc_id
+      - reason
+      title: FlagIn

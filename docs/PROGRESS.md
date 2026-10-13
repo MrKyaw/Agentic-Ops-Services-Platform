@@ -59,3 +59,15 @@
 - Verification: 132 backend + 6 eval + 5 frontend + 4 E2E green, 93% lines, ruff clean, contract 53 paths, load probe + backup roundtrip recorded, secrets clean.
 - Traceability: 68 Complete (verified locally), 72 Partial, 62 Not started, of 202. Remaining Not-started rows need external environments/providers (fine-tuning execution, Bedrock/SageMaker, IdP MFA, pen test, multi-AZ/HA, production SLO proof, BFF, LightRAG-full, gRPC) or are documented process items.
 - E2E hardening along the way: missing HttpClient provider, missing prod fileReplacement, cold-start warmup, trace race fixed.
+
+## 2026-10-12 — 196/202 rows with working code (uncommitted)
+
+- Traceability: 71 Complete (verified locally), 125 Partial, 6 Not started — of 202.
+- The 6 Not-started rows all require external environments by definition: signed builds
+  need an image registry (IN-4), AWS quotas need AWS (IN-6), dedicated tenancy needs a
+  second cluster + decision (MT-6), no-train guarantees need a contracted provider —
+  free-tier use is documented as dev-only (PV-5), managed TLS (SC-3), third-party pen
+  test (SC-7).
+- Suites: 136 backend (91% lines) + 6 eval + 5 frontend + 4 E2E green; contract 63 paths;
+  judge pilot 3/3; load + backup evidence recorded; secrets clean.
+- O1: `liquid/lfm-2.5-2.6b:free` approved (ADR-015), live-verified, fallback chain + breaker in place.

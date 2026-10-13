@@ -17,12 +17,14 @@ JUDGE_TEMPLATE = (
 )
 
 
-def judge_faithfulness(backend, answer: str, passages: list[str]) -> dict:
+def judge_faithfulness(
+    backend, answer: str, passages: list[str], max_tokens: int = 512
+) -> dict:
     prompt = JUDGE_TEMPLATE.replace("{answer}", answer).replace(
         "{evidence}", "\n".join(passages)
     )
     try:
-        raw = backend.generate(prompt, {"max_tokens": 128, "json_mode": True})
+        raw = backend.generate(prompt, {"max_tokens": max_tokens, "json_mode": True})
         parsed = json.loads(raw["text"])
         score = max(0.0, min(1.0, float(parsed.get("score", 0.0))))
         verdict = str(parsed.get("verdict", "unsupported"))

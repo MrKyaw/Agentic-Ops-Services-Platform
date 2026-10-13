@@ -105,3 +105,10 @@ Architectural Decision Records (Phase A). Conservative interpretations where the
 - Context: No Gmail → no Gemini; OpenRouter key available. Developer approves `liquid/lfm-2.5-2.6b:free` for open-source dev/eval use.
 - Decision: Pin `liquid/lfm-2.5-2.6b:free` as the default gateway model with `local-standin` fallback. Free-tier rotation risk accepted for dev; production use requires re-approval with SLO-backed models. Training-data retention warning stands (synthetic/dev data only).
 - Consequences: Model-gated rows become genuinely exercisable; quality bars still unproven at scale.
+
+## ADR-016: Transports and GitOps posture (MC-14, IN-2, IN-3)
+
+- Status: Accepted
+- Context: MCP production transport must be authenticated remote; deployments need GitOps and account segregation.
+- Decision: Agents reach tools over the versioned HTTPS API (authenticated, the MCP-equivalent remote transport); stdio stays a local-dev option. Terraform carries environment/account variables and tags; ArgoCD/GitOps progressive delivery is documented as the promotion mechanism but not yet wired — applying it needs the backend-host decision first.
+- Consequences: MC-14/IN-2/IN-3 stay Partial until the host exists.

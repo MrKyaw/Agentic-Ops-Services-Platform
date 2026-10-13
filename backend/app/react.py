@@ -90,10 +90,14 @@ class ModelPlanner:
         self.backends = backend if isinstance(backend, list) else [backend]
 
     def _generate(self, prompt: str):
+        import hashlib as _hashlib
+
         last = None
         for backend in self.backends:
             try:
-                return backend.generate(prompt, {"max_tokens": 300})
+                out = backend.generate(prompt, {"max_tokens": 300})
+                out["prompt_hash"] = _hashlib.sha256(prompt.encode()).hexdigest()[:16]
+                return out
             except Exception as exc:
                 last = exc
         raise last
@@ -113,6 +117,9 @@ class ModelPlanner:
         try:
             raw = self._generate(prompt)
             decision = json.loads(raw["text"])
+            decision["prompt_hash"] = raw.get(
+                "prompt_hash"
+            )  # OB-7: traceable, PII-free
         except Exception:
             return {
                 "thought": "model unavailable, finishing with context",
@@ -213,3 +220,16 @@ class ReActRunner:
         return RunResult(
             "failed", "max iterations reached", steps, {"iterations": iterations}
         )
+
+
+PATTERNS: dict = {}
+
+
+def register_pattern(name: str, runner_factory) -> None:
+    """Extension point (AO-4): add orchestration patterns without touching the router."""
+    PATTERNS[name] = runner_factory
+
+
+register_pattern(
+    "react", lambda budget=None: ReActRunner(LocalPlanner(), budget or Budget())
+)
