@@ -4,8 +4,7 @@ primary_region = "ord"
 [build]
   image = "neo4j:5-community"
 
-[env]
-  NEO4J_AUTH = "neo4j/${NEO4J_PASSWORD}"
+# Auth comes from `fly secrets set NEO4J_AUTH=neo4j/<password>` (never committed).
 
 [[mounts]]
   source = "neodata"
