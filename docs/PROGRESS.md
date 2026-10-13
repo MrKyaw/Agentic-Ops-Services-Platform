@@ -71,3 +71,14 @@
 - Suites: 136 backend (91% lines) + 6 eval + 5 frontend + 4 E2E green; contract 63 paths;
   judge pilot 3/3; load + backup evidence recorded; secrets clean.
 - O1: `liquid/lfm-2.5-2.6b:free` approved (ADR-015), live-verified, fallback chain + breaker in place.
+
+## 2026-10-13 — Close-out verdict (uncommitted deltas noted)
+
+- Traceability final: 71 Complete (verified locally), 125 Partial, 6 Not started — of 202.
+- The 6 Not-started rows are definitionally external: image signing needs a registry
+  (IN-4), AWS quotas need AWS (IN-6), dedicated tenancy needs a second cluster + decision
+  (MT-6), no-train proof contradicts free-tier use (PV-5, documented dev-only exception),
+  managed TLS (SC-3), third-party penetration test (SC-7). Nothing else is missing code.
+- UI theme rewritten (presentable cards, status roles, focus states, reduced-motion guard).
+- CI fix (cryptography pin) committed locally; Render blueprint added; Dockerfile migrates
+  at startup so managed hosts work without compose overrides.
