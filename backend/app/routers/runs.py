@@ -8,15 +8,16 @@ from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel, Field
 
 from ..audit import AuditLogger
+from ..config import Settings
 from ..db import Store
-from ..deps import get_audit, get_store, require_principal
+from ..deps import get_audit, get_settings, get_store, require_principal
 from ..errors import NotFoundError, RateLimitError, UnavailableError
 from ..intent import classify
 from ..llm import DisabledBackend, GatewayError, select
 from ..mcp import ToolCall, ToolDef, registry
 from ..quotas import allow, cost_usd, estimate_tokens
 from ..rag import retrieval_query, rrf, tfidf_scores
-from ..react import Budget, LocalPlanner, ReActRunner, RunResult, Step
+from ..react import Budget, LocalPlanner, ModelPlanner, ReActRunner, RunResult, Step
 from ..security import Principal
 
 router = APIRouter()
@@ -159,10 +160,27 @@ def _tool_handlers(
         return str(out["result"])
 
     case_create.needs_approval = True  # type: ignore[attr-defined]
+
+    def agent_invoke(args: dict) -> str:
+        """Multi-agent composition (AO-14): depth-capped, cycle-safe (nested agent loses this tool)."""
+        from ..react import Budget as _Budget
+        from ..react import LocalPlanner as _Planner
+        from ..react import ReActRunner as _Runner
+
+        depth = int(args.get("depth", 0))
+        if depth > 2:
+            return "max composition depth exceeded"
+        nested_tools = {"kb.search": kb_search, "catalog.lookup": catalog_lookup}
+        nested = _Runner(_Planner(), _Budget(max_iterations=4)).run(
+            str(args.get("message", "")), nested_tools
+        )
+        return nested.answer
+
     return {
         "kb.search": kb_search,
         "catalog.lookup": catalog_lookup,
         "case.create": case_create,
+        "agent.invoke": agent_invoke,
     }
 
 
@@ -193,7 +211,13 @@ def _finish_run(
     store, tenant, rid, result, intent, manifest, message, principal, audit, body
 ) -> dict:
     _persist_trace(store, tenant, rid, result, _intent_dict(intent))
+    from ..pii import redact_text, scan
+
     answer = result.answer
+    dlp_redacted = False
+    if scan(answer):
+        answer = redact_text(answer)
+        dlp_redacted = True
     schema = manifest.get("output_schema")
     if schema:
         try:
@@ -216,6 +240,7 @@ def _finish_run(
         **result.usage,
         "tokens_in": estimate_tokens(message),
         "tokens_out": estimate_tokens(answer),
+        "dlp_redacted": dlp_redacted,
     }
     store.run_set(tenant, rid, result.status, {"answer": answer}, usage)
     store.usage_add(
@@ -231,6 +256,12 @@ def _finish_run(
     if session_id and result.status == "succeeded":
         store.memory_add(tenant, body.agent_id, session_id, "user", message[:2000])
         store.memory_add(tenant, body.agent_id, session_id, "assistant", answer[:2000])
+    _deliver_webhooks(
+        store, tenant, "run.completed", {"run_id": rid, "status": result.status}
+    )
+    from .system import record_run_outcome
+
+    record_run_outcome(result.status)
     return {
         "id": rid,
         "status": result.status,
@@ -239,12 +270,42 @@ def _finish_run(
     }
 
 
+def _deliver_webhooks(store: Store, tenant: str, event: str, payload: dict) -> None:
+    """Best-effort signed webhook delivery (AP-7): failures never fail the run."""
+    import hashlib
+    import hmac
+    import json as _json
+
+    import httpx
+
+    for hook in store.webhook_list(tenant):
+        if event not in (hook.get("events") or []):
+            continue
+        body = _json.dumps({"event": event, **payload}).encode()
+        signature = hmac.new(
+            hook.get("secret", "").encode(), body, hashlib.sha256
+        ).hexdigest()
+        try:
+            httpx.post(
+                hook["url"],
+                content=body,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Signature": f"sha256={signature}",
+                },
+                timeout=5,
+            )
+        except Exception:
+            continue
+
+
 @router.post("/", response_model=dict, status_code=201)
 def create_run(
     body: RunIn,
     principal: Principal = Depends(require_principal),
     store: Store = Depends(get_store),
     audit: AuditLogger = Depends(get_audit),
+    settings: Settings = Depends(get_settings),
     idempotency_key: str = Header(default="", alias="Idempotency-Key"),
 ) -> dict:
     _register_tools()
@@ -256,10 +317,40 @@ def create_run(
         )
     agent_row = store.agent_latest(tenant, body.agent_id)
     manifest = (agent_row or {}).get("manifest") or {}
-    try:
-        backend = select(tenant, body.agent_id, manifest.get("model", {}))
-    except GatewayError as exc:
-        raise UnavailableError(str(exc)) from exc
+    registry_ref = (manifest.get("model") or {}).get("registry_ref", "")
+    if registry_ref and "@" in registry_ref:
+        mid, _, version = registry_ref.partition("@")
+        entry = next(
+            (
+                m
+                for m in store.model_list(tenant)
+                if m["id"] == mid and m["version"] == version
+            ),
+            None,
+        )
+        if entry is not None and entry["status"] in ("deprecated", "retired"):
+            raise UnavailableError(f"model {registry_ref} is {entry['status']}")
+    secrets = {
+        "api_key": settings.openrouter_api_key,
+        "model": settings.openrouter_model,
+        "base_url": settings.openrouter_base,
+    }
+    policy = manifest.get("model", {})
+    candidates = [policy.get("primary", "local-standin")] + list(
+        policy.get("fallbacks", ["local-standin"])
+    )
+    backend = None
+    last_error: Exception | None = None
+    for primary in dict.fromkeys(candidates):
+        try:
+            backend = select(
+                tenant, body.agent_id, {**policy, "primary": primary}, secrets
+            )
+            break
+        except GatewayError as exc:
+            last_error = exc
+    if backend is None:
+        raise UnavailableError(str(last_error or "no model backend available"))
     if isinstance(backend, DisabledBackend):
         raise UnavailableError(f"model backend kill-switched ({backend.name})")
     if idempotency_key:
@@ -273,7 +364,12 @@ def create_run(
     intent = classify(message, store.intent_list(tenant))
     rid = uuid.uuid4().hex[:12]
     store.run_create(tenant, rid, body.agent_id, "0.1.0", body.input, idempotency_key)
-    runner = ReActRunner(LocalPlanner(), Budget())
+    from ..llm import LocalBackend as _Local
+
+    planner = (
+        ModelPlanner(backend) if not isinstance(backend, _Local) else LocalPlanner()
+    )
+    runner = ReActRunner(planner, Budget())
     tools = _tool_handlers(store, tenant, audit, principal.subject, allow_write=False)
     pattern = (agent_row or {}).get("pattern", "react")
     if pattern == "rewoo":
@@ -376,6 +472,33 @@ def get_run(
     run = store.run_get(principal.tenant_id, rid)
     if run is None:
         raise NotFoundError(f"run {rid} not found")
+    run["steps"] = store.steps(principal.tenant_id, rid)
+    return run
+
+
+@router.get("/{rid}/stream")
+def stream_run(
+    rid: str,
+    principal: Principal = Depends(require_principal),
+    store: Store = Depends(get_store),
+):
+    """Replay a completed run's answer as SSE (live token streaming pending background execution)."""
+    import json as _json
+
+    from fastapi.responses import StreamingResponse
+
+    run = store.run_get(principal.tenant_id, rid)
+    if run is None:
+        raise NotFoundError(f"run {rid} not found")
+    answer = (run.get("output") or {}).get("answer", "")
+
+    def frames():
+        words = answer.split()
+        for i in range(0, max(len(words), 1), 8):
+            yield f"data: {_json.dumps({'delta': ' '.join(words[i : i + 8])})}\n\n"
+        yield "event: done\ndata: {}\n\n"
+
+    return StreamingResponse(frames(), media_type="text/event-stream")
     run["steps"] = store.steps(principal.tenant_id, rid)
     return run
 
