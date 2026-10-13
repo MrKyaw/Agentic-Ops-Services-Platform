@@ -52,6 +52,7 @@ def test_kb_delete_propagates(client, auth):
     deleted = client.delete("/v1/kb/kb-del/docs/doc-del", headers=auth).json()
     assert deleted["documents"] == 1
     assert deleted["chunks"] >= 1
+    assert deleted.get("graph", {}).get("chunks", 0) >= 0
     miss = client.post(
         "/v1/kb/query",
         json={"kb_id": "kb-del", "query": "triage invoice"},
@@ -281,3 +282,146 @@ def test_agent_invoke_depth_guard():
     runner = ReActRunner(LocalPlanner(), Budget(max_iterations=2))
     result = runner.run("anything calm", {"kb.search": lambda a: "done"})
     assert result.status == "succeeded"
+
+
+def test_finetune_lifecycle_with_eval_evidence(client, auth):
+    client.post(
+        "/v1/admin/consents",
+        json={"subject": "tenant-test-01", "purpose": "finetune", "granted": True},
+        headers=auth,
+    )
+    assert (
+        client.post(
+            "/v1/finetune-jobs/",
+            json={
+                "base_model": "tiny-8b",
+                "method": "bogus",
+                "cost_estimate_ack": True,
+            },
+            headers=auth,
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            "/v1/finetune-jobs/",
+            json={"base_model": "tiny-8b", "cost_estimate_ack": False},
+            headers=auth,
+        ).status_code
+        == 409
+    )
+    job = client.post(
+        "/v1/finetune-jobs/",
+        json={
+            "base_model": "tiny-8b",
+            "method": "lora",
+            "dataset_ref": "dsv-1",
+            "cost_estimate_ack": True,
+        },
+        headers=auth,
+    )
+    assert job.status_code == 201
+    assert job.json()["executor"] == "pending-training-infra"
+    jid = job.json()["id"]
+    assert (
+        client.post(f"/v1/finetune-jobs/{jid}/approve", headers=auth).json()[
+            "approvals"
+        ]
+        == 1
+    )
+    assert (
+        client.post(f"/v1/finetune-jobs/{jid}/approve", headers=auth).status_code == 409
+    )
+    exp_id = client.post(
+        "/v1/experiments/",
+        json={
+            "subject_type": "model",
+            "subject_ref": jid,
+            "metrics": {"accuracy": 0.8},
+        },
+        headers=auth,
+    ).json()["id"]
+    job2 = client.post(
+        "/v1/finetune-jobs/",
+        json={
+            "base_model": "tiny-8b",
+            "method": "lora",
+            "dataset_ref": "dsv-2",
+            "cost_estimate_ack": True,
+        },
+        headers=auth,
+    ).json()["id"]
+    assert (
+        client.post(
+            f"/v1/finetune-jobs/{job2}/approve?eval_ref=nope", headers=auth
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            f"/v1/finetune-jobs/{job2}/approve?eval_ref={exp_id}", headers=auth
+        ).json()["approvals"]
+        == 1
+    )
+
+
+def test_registry_serving_and_deprecation(client, auth):
+    client.post(
+        "/v1/admin/models",
+        json={
+            "id": "serve-model",
+            "version": "1.0",
+            "backend": "local-standin",
+            "risk_tier": "low",
+        },
+        headers=auth,
+    )
+    for target in ("evaluated", "approved"):
+        assert (
+            client.post(
+                f"/v1/admin/models/serve-model/1.0/status?status={target}", headers=auth
+            ).status_code
+            == 200
+        )
+    client.post(
+        "/v1/agents/",
+        json={"id": "serve-agent", "displayName": "S", "pattern": "react"},
+        headers=auth,
+    )
+    import json as _json
+    import os
+
+    from app.db import Store
+
+    url = os.environ.get("TEST_DATABASE_URL", os.environ.get("DATABASE_URL", ""))
+    store = Store(url)
+    row = store.agent_latest("tenant-test-01", "serve-agent")
+    manifest = dict(row["manifest"] or {})
+    manifest["model"] = {"primary": "local-standin", "registry_ref": "serve-model@1.0"}
+    store._write(
+        "UPDATE agents SET manifest = %s WHERE tenant_id = %s AND id = %s AND version = %s",
+        (_json.dumps(manifest), "tenant-test-01", "serve-agent", row["version"]),
+    )
+    assert (
+        client.post(
+            "/v1/runs/",
+            json={"agent_id": "serve-agent", "input": {"message": "hi"}},
+            headers=auth,
+        ).json()["status"]
+        == "succeeded"
+    )
+    for target in ("deployed", "deprecated"):
+        assert (
+            client.post(
+                f"/v1/admin/models/serve-model/1.0/status?status={target}", headers=auth
+            ).status_code
+            == 200
+        )
+    assert (
+        client.post(
+            "/v1/runs/",
+            json={"agent_id": "serve-agent", "input": {"message": "hi"}},
+            headers=auth,
+        ).status_code
+        == 503
+    )
