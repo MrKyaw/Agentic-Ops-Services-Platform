@@ -1,17 +1,256 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  color-scheme: light;
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --ink: #17202f;
+  --muted: #5b6474;
+  --brand: #1a2332;
+  --accent: #2f6fed;
+  --accent-ink: #ffffff;
+  --ok: #0e7a3d;
+  --warn: #9a5b00;
+  --bad: #a40000;
+  --line: #dfe4ee;
+  --radius: 10px;
+}
 
-:root { color-scheme: light; }
-body { font-family: system-ui, sans-serif; margin: 0; }
-header nav { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 1rem; background: #1a2332; color: #fff; }
-header nav a { color: #cfe0ff; }
-header nav .tenant { margin-left: auto; opacity: 0.8; }
-main, section { max-width: 72rem; margin: 1.5rem auto; padding: 0 1rem; }
-.card { max-width: 28rem; margin: 4rem auto; padding: 2rem; border: 1px solid #ccc; border-radius: 8px; }
-label { display: block; margin-top: 0.75rem; font-weight: 600; }
-input, select, button { font-size: 1rem; padding: 0.5rem; margin-top: 0.25rem; }
-form.row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end; }
-.error { color: #a40000; }
-.hint { color: #555; }
-pre { background: #f4f4f4; padding: 0.75rem; overflow-x: auto; }
-.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-:focus-visible { outline: 3px solid #2f6fed; outline-offset: 2px; }
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+header nav {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.6rem 1.25rem;
+  background: var(--brand);
+  color: #fff;
+  flex-wrap: wrap;
+}
+
+header nav strong {
+  font-size: 1.05rem;
+  margin-right: 1rem;
+  letter-spacing: 0.01em;
+}
+
+header nav a {
+  color: #cfe0ff;
+  text-decoration: none;
+  padding: 0.45rem 0.75rem;
+  border-radius: 7px;
+}
+
+header nav a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+header nav .tenant {
+  margin-left: auto;
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
+header nav button {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+main,
+section {
+  max-width: 76rem;
+  margin: 1.5rem auto;
+  padding: 0 1.25rem;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+}
+
+h1 {
+  font-size: 1.6rem;
+  margin: 0 0 1rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.5rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card {
+  max-width: 30rem;
+  margin: 4rem auto;
+  padding: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(23, 32, 47, 0.08);
+}
+
+label {
+  display: block;
+  margin-top: 0.85rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+label small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+input,
+select,
+button {
+  font-size: 1rem;
+  padding: 0.55rem 0.75rem;
+  margin-top: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--accent);
+  outline: 2px solid rgba(47, 111, 237, 0.25);
+}
+
+button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(0.93);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+header nav button {
+  background: transparent;
+}
+
+form.row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+form.row input {
+  flex: 1 1 12rem;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+}
+
+ul li {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  margin-bottom: 0.5rem;
+  background: #fafbfe;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+ul li strong {
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--accent);
+}
+
+.error,
+[role="alert"] {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+[role="status"] {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--muted);
+}
+
+pre {
+  background: #0f1622;
+  color: #dbe4f5;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  border-radius: 7px;
+  font-size: 0.85rem;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 1.25rem;
+  background: #fafbfe;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 1rem 1.25rem;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none;
+  }
+}

@@ -3,6 +3,7 @@ uvicorn==0.34.2
 pydantic==2.12.5
 pydantic-settings==2.14.2
 PyJWT==2.13.0
+cryptography==48.0.1
 httpx==0.28.1
 PyYAML==6.0.3
 jsonschema==4.26.0

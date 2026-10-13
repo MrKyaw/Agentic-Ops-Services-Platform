@@ -34,7 +34,6 @@ services:
       OPENROUTER_BASE: ${OPENROUTER_BASE:-https://openrouter.ai/api/v1}
     ports:
       - "${API_PORT:-8000}:8000"
-    command: sh -c "python -c \"from app.migrate import migrate; import os; print(migrate(os.environ['DATABASE_URL']))\" && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     depends_on:
       db:
         condition: service_healthy
