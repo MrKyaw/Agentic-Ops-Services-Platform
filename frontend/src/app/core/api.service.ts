@@ -2,7 +2,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuthStore } from './auth-store';
-import { environment } from '../../environments/environment';
 
 export interface Agent {
   id: string;
@@ -53,7 +52,7 @@ export class ApiService {
   }
 
   private url(path: string): string {
-    return `${environment.apiUrl}${path}`;
+    return `${this.auth.endpoint()}${path}`;
   }
 
   listAgents(): Observable<Agent[]> {
@@ -79,7 +78,7 @@ export class ApiService {
     return this.http.get<RunDetail>(this.url(`/v1/runs/${id}`), { headers: this.headers(false) });
   }
   async streamRun(id: string, onDelta: (text: string) => void): Promise<void> {
-    const response = await fetch(`${environment.apiUrl}/v1/runs/${id}/stream`, {
+    const response = await fetch(`${this.auth.endpoint()}/v1/runs/${id}/stream`, {
       headers: {
         Authorization: `Bearer ${this.auth.token()}`,
         'X-Tenant-ID': this.auth.tenant(),

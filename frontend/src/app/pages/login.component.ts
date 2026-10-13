@@ -17,6 +17,8 @@ import { STRINGS } from '../core/messages';
         <input id="token" name="token" type="password" [(ngModel)]="token" required autocomplete="off" />
         <label for="tenant">{{ t.login.tenant }}</label>
         <input id="tenant" name="tenant" [(ngModel)]="tenant" required autocomplete="off" />
+        <label for="apiUrl">API URL <small>(optional — blank uses the deployed default)</small></label>
+        <input id="apiUrl" name="apiUrl" [(ngModel)]="apiUrl" placeholder="https://agentic-ops-api.fly.dev" autocomplete="off" />
         <button type="submit" [disabled]="form.invalid">{{ t.login.submit }}</button>
       </form>
     </main>
@@ -28,9 +30,10 @@ export class LoginComponent {
   private router = inject(Router);
   token = signal('');
   tenant = signal('');
+  apiUrl = signal('');
 
   connect(): void {
-    this.auth.connect(this.token().trim(), this.tenant().trim());
+    this.auth.connect(this.token().trim(), this.tenant().trim(), this.apiUrl().trim());
     void this.router.navigate(['/runs']);
   }
 }

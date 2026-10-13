@@ -27,4 +27,13 @@ describe('AuthStore', () => {
     expect(auth.connected).toBeFalse();
     expect(localStorage.getItem('sap.token')).toBeNull();
   });
+
+  it('supports an API URL override with environment fallback', () => {
+    TestBed.configureTestingModule({});
+    const auth = TestBed.inject(AuthStore);
+    auth.connect('tok', 'tenant-9', 'https://api.example');
+    expect(auth.endpoint()).toBe('https://api.example');
+    auth.connect('tok', 'tenant-9');
+    expect(auth.endpoint()).not.toBe('');
+  });
 });
